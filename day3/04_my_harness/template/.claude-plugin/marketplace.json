@@ -1,0 +1,16 @@
+{
+  "name": "my-harness",
+  "owner": {
+    "name": "내 이름"
+  },
+  "description": "나만의 하네스 뼈대 — 수업 실습용",
+  "plugins": [
+    {
+      "name": "my-harness",
+      "source": "./my-harness",
+      "description": "나만의 하네스 뼈대 — 출장비 정산 검토 예시. 사실은 스크립트, 판단은 스킬, 결정은 사람",
+      "version": "0.1.0",
+      "category": "example"
+    }
+  ]
+}

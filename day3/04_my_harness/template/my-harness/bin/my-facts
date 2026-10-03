@@ -1,0 +1,53 @@
+#!/usr/bin/env python3
+"""사실만 센다 — 판단하지 않는다. 출력은 KEY: value 줄. 스킬은 이 값을 다시 계산하지 않는다.
+
+    my-facts [경로]      (생략하면 /tmp/my-demo)
+"""
+import csv
+import os
+import sys
+from datetime import date
+
+PROTO = 1
+
+
+def main():
+    path = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else "/tmp/my-demo")
+    try:
+        rules = {r["항목"]: float(r["한도"]) for r in csv.DictReader(open(os.path.join(path, "rules.csv"), encoding="utf-8"))}
+        claims = list(csv.DictReader(open(os.path.join(path, "claims.csv"), encoding="utf-8")))
+        decided = {r["청구번호"] for r in csv.DictReader(open(os.path.join(path, "decisions.csv"), encoding="utf-8"))}
+    except (OSError, KeyError, ValueError) as e:
+        print(f"ERROR: 데이터를 읽지 못했다 — {e}")
+        return 1
+
+    print(f"MY_FACTS_PROTO: {PROTO}")
+    print(f"DEMO_DIR: {path}")
+    print(f"CLAIM_COUNT: {len(claims)}")
+    flagged = []
+    for c in claims:
+        cid = c["청구번호"]
+        nights, days = int(c["숙박일수"]), int(c["출장일수"])
+        cap = rules["숙박_서울제주"] if c["출장지"] in ("서울", "제주") else rules["숙박"]
+        lodging_over = max(0, int(c["숙박비"]) - int(cap * nights))
+        perdiem_over = max(0, int(c["일비"]) - int(rules["일비"] * days))
+        late = (date.fromisoformat(c["청구일"]) - date.fromisoformat(c["귀임일"])).days
+        late_over = max(0, late - int(rules["정산기한"]))
+        receipt = c["영수증"] == "있음"
+        print(f"{cid}.WHO: {c['이름']} {c['출장지']}")
+        print(f"{cid}.LODGING_LIMIT: {int(cap * nights)}")
+        print(f"{cid}.LODGING_OVER: {lodging_over}")
+        print(f"{cid}.PERDIEM_OVER: {perdiem_over}")
+        print(f"{cid}.DAYS_TO_CLAIM: {late}")
+        print(f"{cid}.LATE_DAYS: {late_over}")
+        print(f"{cid}.RECEIPT: {'yes' if receipt else 'no'}")
+        print(f"{cid}.DECIDED: {'yes' if cid in decided else 'no'}")
+        if lodging_over or perdiem_over or late_over or not receipt:
+            flagged.append(cid)
+    print(f"FLAGGED: {' '.join(flagged) if flagged else 'none'}")
+    print("MY_FACTS_OK")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

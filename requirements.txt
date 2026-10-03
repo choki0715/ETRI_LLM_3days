@@ -1,0 +1,9 @@
+anthropic>=1.5
+python-dotenv>=1.0
+jupyter
+pytest
+sentence-transformers>=3.0
+chromadb>=1.0
+numpy
+mcp
+playwright

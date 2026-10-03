@@ -1,0 +1,32 @@
+From 9f04302fa186baa76c8520e0fe98e6da177da155 Mon Sep 17 00:00:00 2001
+From: 강사 풀이
+Date: Thu, 1 Oct 2026 19:13:41 +0900
+Subject: [PATCH] =?UTF-8?q?=EC=9C=84=ED=97=98=20=EA=B8=B0=EC=A4=80=20CRIT?=
+ =?UTF-8?q?=20=EC=97=B0=EC=86=8D=203=20->=2015?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ sf-harness/skills/analyze/SKILL.md | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/sf-harness/skills/analyze/SKILL.md b/sf-harness/skills/analyze/SKILL.md
+index 4e1438f..36c1431 100644
+--- a/sf-harness/skills/analyze/SKILL.md
++++ b/sf-harness/skills/analyze/SKILL.md
+@@ -67,9 +67,9 @@ STATE 가 stopped
+ 
+ | 소견 | 기준 |
+ |---|---|
+-| **위험** | `CRIT_STREAK ≥ 3`. 다른 센서도 WARN 이상이면 "확신 높음" |
++| **위험** | `CRIT_STREAK ≥ 15`. 다른 센서도 WARN 이상이면 "확신 높음" |
+ | **주의** | `STATUS: WARN` 이고 `WARN_STREAK ≥ 3`, 또는 `MIN_TO_WARN ≤ 240` 이고 추세 양수 |
+-| **재확인** | `OVER_CRIT ≥ 1` 인데 `CRIT_STREAK = 0` (일시 스파이크), 또는 `CRIT_STREAK 1~2` |
++| **재확인** | `OVER_CRIT ≥ 1` 인데 `CRIT_STREAK = 0` (일시 스파이크), 또는 `CRIT_STREAK 1~14` |
+ | **정상** | 위 어디에도 안 걸리고 데이터를 믿을 수 있다 |
+ | **판단보류** | STALE, 또는 믿을 센서가 하나도 없다 |
+ | **정지중** | `STATE: stopped` |
+-- 
+2.43.0
+

@@ -1,0 +1,50 @@
+#!/usr/bin/env python3
+"""연습용 데이터 — 출장비 정산 청구 8건과 지급 기준. 경로를 안 주면 /tmp/my-demo.
+
+    my-demo-data [경로] [--fresh]
+"""
+import os
+import shutil
+import sys
+
+MARKER = ".my-harness"
+RULES = """항목,한도,단위
+숙박,120000,원/박
+숙박_서울제주,150000,원/박
+일비,30000,원/일
+정산기한,7,일
+"""
+CLAIMS = """청구번호,이름,출장지,귀임일,청구일,숙박일수,숙박비,출장일수,일비,영수증
+C-001,김민수,부산,2026-09-01,2026-09-04,2,240000,3,90000,있음
+C-002,이도윤,서울,2026-09-02,2026-09-05,1,150000,2,60000,있음
+C-003,박서준,대구,2026-09-03,2026-09-15,1,110000,2,60000,있음
+C-004,최유나,광주,2026-09-05,2026-09-08,2,280000,3,90000,있음
+C-005,정민재,제주,2026-09-06,2026-09-09,3,450000,4,120000,없음
+C-006,한지우,울산,2026-09-08,2026-09-10,1,120000,2,80000,있음
+C-007,김하늘,서울,2026-09-10,2026-09-12,2,330000,3,90000,있음
+C-008,이서연,대전,2026-09-11,2026-09-13,0,0,1,30000,있음
+"""
+
+
+def main():
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    path = os.path.abspath(args[0] if args else "/tmp/my-demo")
+    if "--fresh" in sys.argv and os.path.exists(path):
+        if not os.path.exists(os.path.join(path, MARKER)):
+            print(f"ERROR: {path} 에 {MARKER} 마커가 없다 — 연습 폴더가 아니므로 지우지 않는다")
+            return 1
+        shutil.rmtree(path)
+    if os.path.exists(os.path.join(path, "claims.csv")):
+        print(f"이미 있다: {path} (다시 만들려면 --fresh)")
+        return 0
+    os.makedirs(os.path.join(path, "reports"), exist_ok=True)
+    open(os.path.join(path, "rules.csv"), "w", encoding="utf-8").write(RULES)
+    open(os.path.join(path, "claims.csv"), "w", encoding="utf-8").write(CLAIMS)
+    open(os.path.join(path, "decisions.csv"), "w", encoding="utf-8").write("청구번호,결정,사유,결정자\n")
+    open(os.path.join(path, MARKER), "w").write("")
+    print(f"DEMO_DIR: {path}\n청구 8건 · 기준 4개를 만들었다")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

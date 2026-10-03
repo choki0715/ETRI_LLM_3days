@@ -1,0 +1,61 @@
+From 82786e8948ccf96134a8d475d221fd9a633f4bf5 Mon Sep 17 00:00:00 2001
+From: 강사 풀이
+Date: Thu, 1 Oct 2026 19:14:03 +0900
+Subject: [PATCH] =?UTF-8?q?=EC=83=88=20=EC=82=AC=EC=8B=A4:=20HALF=5FCHANGE?=
+ =?UTF-8?q?=5FPCT?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ sf-harness/bin/sf-signals          | 7 +++++++
+ sf-harness/skills/analyze/SKILL.md | 1 +
+ test/run-tests.sh                  | 2 ++
+ 3 files changed, 10 insertions(+)
+
+diff --git a/sf-harness/bin/sf-signals b/sf-harness/bin/sf-signals
+index 941ce4d..952e1b0 100755
+--- a/sf-harness/bin/sf-signals
++++ b/sf-harness/bin/sf-signals
+@@ -346,6 +346,13 @@ def main() -> int:
+                   else f"{key}.WINDOW: n={n} mean={fnum(mean)} std={fnum(std)} min={fnum(min(values))} "
+                        f"max={fnum(max(values))} span_min=0 max_gap_sec=0")
+             print(f"{key}.TREND_PER_HOUR: {fsigned(slope * 60)}")
++            # 창 전반 대비 후반 평균 변화율(%) — 추세(기울기)가 못 보는 '계단식' 변화를 잡는다
++            if n >= 4:
++                h = n // 2
++                m1, m2 = sum(values[:h]) / h, sum(values[h:]) / (n - h)
++                print(f"{key}.HALF_CHANGE_PCT: {fsigned((m2 - m1) / abs(m1) * 100) if m1 else 'none'}")
++            else:
++                print(f"{key}.HALF_CHANGE_PCT: none")
+             print(f"{key}.OVER_WARN: {sum(1 for lv in levels if lv >= 1)}")
+             print(f"{key}.OVER_CRIT: {sum(1 for lv in levels if lv >= 2)}")
+             print(f"{key}.WARN_STREAK: {streak_from_end(levels, 1)}")
+diff --git a/sf-harness/skills/analyze/SKILL.md b/sf-harness/skills/analyze/SKILL.md
+index 4e1438f..384216a 100644
+--- a/sf-harness/skills/analyze/SKILL.md
++++ b/sf-harness/skills/analyze/SKILL.md
+@@ -31,6 +31,7 @@ description: 프로세스 2단계. sf-signals 가 뽑은 사실 위에서 설비
+ | `OVER_WARN`, `OVER_CRIT` | 창 안에서 한계를 넘은 샘플 **개수** |
+ | `WARN_STREAK`, `CRIT_STREAK` | 마지막 샘플부터 거슬러 **연속으로** 넘은 개수 |
+ | `TREND_PER_HOUR` | 최소제곱 기울기. 시간당 변화량 |
++| `HALF_CHANGE_PCT` | 창 전반 평균 대비 후반 평균의 변화율(%). 추세가 완만해도 이 값이 ±10% 를 넘으면 소견 근거에 "최근 급변"으로 적는다 |
+ | `MIN_TO_WARN` | 이 추세가 이어지면 주의 한계까지 몇 분. `0` = 이미 넘음, `none` = 24시간 안엔 안 닿음 |
+ | `FLATLINE` | 마지막 `flat_n` 샘플이 완전히 같은 값 (1 이면 센서 고착 의심) |
+ | `STALE_MIN` | 설비의 마지막 샘플이 몇 분 전인가 |
+diff --git a/test/run-tests.sh b/test/run-tests.sh
+index d9cfa0b..9cfaadc 100755
+--- a/test/run-tests.sh
++++ b/test/run-tests.sh
+@@ -77,6 +77,8 @@ check   "CNC-02 이미 넘었으면 MIN_TO_WARN 0" CNC-02.vibration.MIN_TO_WARN
+ # CNC-01: 추세와 일시 스파이크
+ check   "CNC-01 온도 아직 OK"              CNC-01.temperature.STATUS OK
+ case "$(field CNC-01.temperature.TREND_PER_HOUR)" in +*) ok "CNC-01 온도 추세 양수" ;; *) bad "추세 부호" "+" "$(field CNC-01.temperature.TREND_PER_HOUR)" ;; esac
++check   "CNC-02 진동 전반 대비 후반 +136.73%"  CNC-02.vibration.HALF_CHANGE_PCT +136.73
++check   "CNC-01 전류는 거의 변화 없음"       CNC-01.current.HALF_CHANGE_PCT -0.01
+ m="$(field CNC-01.temperature.MIN_TO_WARN)"
+ [ "$m" != none ] && [ "$m" -gt 30 ] && [ "$m" -lt 120 ] && ok "CNC-01 온도 30~120분 뒤 WARN (외삽)" || bad "MIN_TO_WARN" "30~120" "$m"
+ check   "CNC-01 전류 스파이크 1회"         CNC-01.current.OVER_CRIT 1
+-- 
+2.43.0
+

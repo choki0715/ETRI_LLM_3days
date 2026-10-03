@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>벽돌깨기 · 강사 참고 답안</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b1020; }
+  body { display: flex; align-items: center; justify-content: center; font-family: "Malgun Gothic", sans-serif; }
+  canvas { background: #111827; max-width: 100vw; max-height: 100vh; width: min(100vw, 133.33vh); height: auto; display: block; }
+</style>
+</head>
+<body>
+<canvas id="game" width="800" height="600"></canvas>
+<script>
+// ===== 게임 상수 — 파일 맨 위에 모은다 =====
+const W = 800, H = 600;
+const PADDLE_W = 110, PADDLE_H = 14, PADDLE_Y = H - 40, PADDLE_SPEED = 8;
+const BALL_R = 8, BALL_SPEED = 5, BALL_SPEED_MAX = 9, SPEED_UP = 1.02;
+const ROWS = 5, COLS = 10, BRICK_H = 22, BRICK_GAP = 6, BRICK_TOP = 70, BRICK_SIDE = 30;
+const ROW_COLORS = ["#DC2626", "#EA580C", "#CA8A04", "#16A34A", "#2563EB"];
+const POINTS = 10, LIVES = 3, MAX_BOUNCE = Math.PI / 3;   // 패들 끝에서 최대 60도
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+const keys = { left: false, right: false };
+
+// 테스트용 — 자동 플레이 테스트(playtest.py)가 상태를 읽는다
+const game = window.game = {};
+
+function newBricks() {
+  const bw = (W - BRICK_SIDE * 2 - BRICK_GAP * (COLS - 1)) / COLS;
+  const list = [];
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++)
+      list.push({ x: BRICK_SIDE + c * (bw + BRICK_GAP), y: BRICK_TOP + r * (BRICK_H + BRICK_GAP), w: bw, h: BRICK_H, color: ROW_COLORS[r], alive: true });
+  return list;
+}
+
+function resetBall() {
+  game.ball = { x: game.paddle.x + PADDLE_W / 2, y: PADDLE_Y - BALL_R - 1, vx: 0, vy: 0, stuck: true };
+}
+
+function resetGame() {
+  game.paddle = { x: (W - PADDLE_W) / 2 };
+  game.bricks = newBricks();
+  game.score = 0;
+  game.lives = LIVES;
+  game.state = "ready";          // ready · play · over · clear
+  resetBall();
+}
+
+function launch() {
+  const angle = (Math.random() * 0.5 - 0.25) * Math.PI;   // 위쪽으로 ±45도
+  game.ball.vx = BALL_SPEED * Math.sin(angle);
+  game.ball.vy = -BALL_SPEED * Math.cos(angle);
+  game.ball.stuck = false;
+  game.state = "play";
+}
+
+addEventListener("keydown", e => {
+  if (e.key === "ArrowLeft") keys.left = true;
+  if (e.key === "ArrowRight") keys.right = true;
+  if (e.key === " " || e.key === "Enter") {
+    if (game.state === "over" || game.state === "clear") resetGame();
+    else if (game.ball.stuck) launch();
+    e.preventDefault();
+  }
+  if (e.key.startsWith("Arrow")) e.preventDefault();
+});
+addEventListener("keyup", e => {
+  if (e.key === "ArrowLeft") keys.left = false;
+  if (e.key === "ArrowRight") keys.right = false;
+});
+
+// 원과 사각형 충돌: 사각형에서 원 중심에 가장 가까운 점까지의 거리
+function hitRect(b, r) {
+  const cx = Math.max(r.x, Math.min(b.x, r.x + r.w));
+  const cy = Math.max(r.y, Math.min(b.y, r.y + r.h));
+  const dx = b.x - cx, dy = b.y - cy;
+  return dx * dx + dy * dy <= BALL_R * BALL_R ? { dx, dy } : null;
+}
+
+function speedUp(b) {
+  const s = Math.hypot(b.vx, b.vy);
+  const k = Math.min(BALL_SPEED_MAX, s * SPEED_UP) / s;
+  b.vx *= k; b.vy *= k;
+}
+
+function step() {
+  const p = game.paddle, b = game.ball;
+  if (keys.left) p.x -= PADDLE_SPEED;
+  if (keys.right) p.x += PADDLE_SPEED;
+  p.x = Math.max(0, Math.min(W - PADDLE_W, p.x));            // 체크 1: 화면 밖으로 안 나간다
+
+  if (b.stuck) { b.x = p.x + PADDLE_W / 2; return; }
+  if (game.state !== "play") return;
+
+  // 빠른 공이 벽돌을 뚫지 않게 한 프레임을 잘게 나눠 움직인다 (체크 4)
+  const n = Math.ceil(Math.hypot(b.vx, b.vy) / (BALL_R / 2));
+  for (let i = 0; i < n; i++) {
+    b.x += b.vx / n; b.y += b.vy / n;
+
+    if (b.x < BALL_R) { b.x = BALL_R; b.vx = Math.abs(b.vx); }
+    if (b.x > W - BALL_R) { b.x = W - BALL_R; b.vx = -Math.abs(b.vx); }
+    if (b.y < BALL_R) { b.y = BALL_R; b.vy = Math.abs(b.vy); }
+
+    // 패들 — 내려올 때만, 맞은 위치로 각도를 정하고 패들 위로 밀어낸다 (체크 2)
+    const pr = { x: p.x, y: PADDLE_Y, w: PADDLE_W, h: PADDLE_H };
+    if (b.vy > 0 && hitRect(b, pr)) {
+      const rel = Math.max(-1, Math.min(1, (b.x - (p.x + PADDLE_W / 2)) / (PADDLE_W / 2)));
+      const s = Math.hypot(b.vx, b.vy);
+      b.vx = s * Math.sin(rel * MAX_BOUNCE);
+      b.vy = -s * Math.cos(rel * MAX_BOUNCE);
+      b.y = PADDLE_Y - BALL_R - 0.5;
+    }
+
+    // 벽돌 — 한 번에 하나만 깬다 (체크 3)
+    for (const br of game.bricks) {
+      if (!br.alive) continue;
+      const h = hitRect(b, br);
+      if (!h) continue;
+      br.alive = false;
+      game.score += POINTS;
+      if (Math.abs(h.dx) > Math.abs(h.dy)) b.vx = -b.vx; else b.vy = -b.vy;
+      speedUp(b);
+      break;
+    }
+
+    if (b.y > H + BALL_R) {                                   // 바닥 — 목숨 하나 (체크 5)
+      game.lives -= 1;
+      if (game.lives <= 0) { game.state = "over"; b.vx = b.vy = 0; }
+      else { game.state = "ready"; resetBall(); }
+      return;
+    }
+  }
+  if (game.bricks.every(br => !br.alive)) { game.state = "clear"; b.vx = b.vy = 0; }   // 체크 7
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  for (const br of game.bricks) if (br.alive) { ctx.fillStyle = br.color; ctx.fillRect(br.x, br.y, br.w, br.h); }
+  ctx.fillStyle = "#E5E7EB"; ctx.fillRect(game.paddle.x, PADDLE_Y, PADDLE_W, PADDLE_H);
+  ctx.beginPath(); ctx.arc(game.ball.x, game.ball.y, BALL_R, 0, Math.PI * 2); ctx.fillStyle = "#FFFFFF"; ctx.fill();
+
+  ctx.fillStyle = "#FFFFFF"; ctx.font = "bold 20px 'Malgun Gothic', sans-serif"; ctx.textAlign = "left";
+  ctx.fillText(`SCORE ${game.score}`, 20, 36);
+  ctx.textAlign = "right"; ctx.fillText("♥ ".repeat(game.lives).trim(), W - 20, 36);
+
+  const msg = { ready: "스페이스바로 시작", over: "GAME OVER · 스페이스바로 다시", clear: "CLEAR! · 스페이스바로 다시" }[game.state];
+  if (msg) { ctx.textAlign = "center"; ctx.font = "bold 28px 'Malgun Gothic', sans-serif"; ctx.fillText(msg, W / 2, H / 2 + 60); }
+}
+
+function loop() { step(); draw(); requestAnimationFrame(loop); }
+resetGame();
+loop();
+</script>
+</body>
+</html>

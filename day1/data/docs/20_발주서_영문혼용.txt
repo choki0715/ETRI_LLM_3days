@@ -1,0 +1,7 @@
+[구매팀] PO 발행 요청 — Bearing Unit
+
+Item: Bearing Unit (모델 BU-2041)
+PO 수량: 500 EA
+Unit price: USD 12
+Lead time: 6 weeks
+납품지는 가공 2공장입니다.

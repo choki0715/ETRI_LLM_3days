@@ -1,0 +1,68 @@
+From aca6a66cf651f62dd2988fd322107edbdaf48ed6 Mon Sep 17 00:00:00 2001
+From: 강사 풀이
+Date: Thu, 1 Oct 2026 19:13:41 +0900
+Subject: [PATCH] =?UTF-8?q?=EC=A0=95=EB=B9=84=20=EC=9D=B4=EB=A0=A5=20?=
+ =?UTF-8?q?=EC=82=AD=EC=A0=9C=20=EA=B8=88=EC=A7=80?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ sf-harness/hooks/guard.py | 6 ++++--
+ test/run-tests.sh         | 7 +++++++
+ 2 files changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/sf-harness/hooks/guard.py b/sf-harness/hooks/guard.py
+index cbb78a7..198579e 100644
+--- a/sf-harness/hooks/guard.py
++++ b/sf-harness/hooks/guard.py
+@@ -58,6 +58,8 @@ ACTUATE_RULES = [
+ 
+ # ── 3·4: 흔한 파일 이름. 마커 범위 안에서만 막는다 ───────────────
+ FILE_RULES = [
++    (re.compile(CMD_START + r"(?:rm|truncate|mv)\b[^;&|\n]*maintenance_log\.csv"),
++     "정비 이력은 설비 이력의 증거다. 지우거나 옮기지 않는다."),
+     (re.compile(CMD_START + r"(?:rm|shred|truncate|unlink|mv)\s[^;&|\n]*(?<![\w.-])signals\b"),
+      "원본 센서 로그(signals/)는 사고 조사의 증거다. 지우거나 옮기지 않는다."),
+     (re.compile(r"(?<!\d)>{1,2}\s*[^;&|\n\s]*(?<![\w.-])signals/"),
+@@ -70,10 +72,10 @@ FILE_RULES = [
+ ]
+ 
+ # 파일 편집 도구(Write/Edit)로 우회하는 것도 막는다. Bash 만 막으면 반쪽이다.
+-PROTECTED_FILE = re.compile(r"(?:^|/)(?:config/thresholds\.csv|signals/[^/]+\.csv)$")
++PROTECTED_FILE = re.compile(r"(?:^|/)(?:config/thresholds\.csv|signals/[^/]+\.csv|maintenance_log\.csv)$")
+ 
+ # 명령 안에서 경로처럼 보이는 토큰: signals 나 thresholds.csv 를 담은 것만 본다
+-PATH_TOKEN = re.compile(r"[\"']?([^\s\"';&|<>]*(?:signals|thresholds\.csv)[^\s\"';&|<>]*)")
++PATH_TOKEN = re.compile(r"[\"']?([^\s\"';&|<>]*(?:signals|thresholds\.csv|maintenance_log\.csv)[^\s\"';&|<>]*)")
+ 
+ 
+ def deny(reason: str) -> None:
+diff --git a/test/run-tests.sh b/test/run-tests.sh
+index d9cfa0b..10ab1ab 100755
+--- a/test/run-tests.sh
++++ b/test/run-tests.sh
+@@ -273,6 +273,11 @@ gf "Write 로 한계값 편집"             DENY Write "$PLANT/config/thresholds
+ gf "Edit 로 원본 로그 편집"           DENY Edit  "$PLANT/signals/CNC-01.csv"
+ gf "Write 로 소견서 작성은 통과"      PASS Write "$PLANT/reports/analysis.md"
+ gf "Read 도구는 검사 안 함"           PASS Read  "$PLANT/config/thresholds.csv"
++g "정비 이력 삭제"                    DENY "rm maintenance_log.csv"
++g "정비 이력 이동"                    DENY "mv maintenance_log.csv /tmp/"
++g "정비 이력 비우기"                  DENY "truncate -s 0 maintenance_log.csv"
++g "정비 이력 읽기는 통과"             PASS "cat maintenance_log.csv"
++gf "Write 로 정비 이력 덮어쓰기"      DENY Write "$PLANT/maintenance_log.csv"
+ 
+ out="$(echo 'not json' | python3 "$GUARD")"
+ [ -z "$out" ] && ok "깨진 입력은 통과 (fail-open)" || bad "깨진 입력" "PASS" "DENY"
+@@ -292,6 +297,8 @@ g "절대 경로 덮어쓰기"                     DENY "cat x > $PLANT/config/t
+ g "마커 없는 곳의 signals 는 남의 파일 — 통과" PASS "rm -rf signals"
+ g "마커 없는 곳의 thresholds.csv 도 통과"  PASS "sed -i 's/a/b/' config/thresholds.csv"
+ g "마커 없는 절대 경로도 통과"             PASS "rm $TMP/empty/signals.csv"
++g "절대 경로 정비 이력 삭제"                DENY "rm $PLANT/maintenance_log.csv"
++g "마커 없는 곳의 정비 이력은 통과"         PASS "rm maintenance_log.csv"
+ SF_HARNESS_GUARD=1 g "환경변수로 켜면 어디서든 막힌다" DENY "rm -rf signals"
+ gf "cwd 밖이어도 플랜트 파일 편집은 막는다" DENY Write "$PLANT/config/thresholds.csv"
+ mkdir -p "$TMP/other/config"; touch "$TMP/other/config/thresholds.csv"
+-- 
+2.43.0
+

@@ -1,0 +1,29 @@
+#!/usr/bin/env python3
+"""결정 기록 — 사람이 터미널에서 친다. 에이전트가 치면 훅이 막는다.
+
+    my-decide [--dir 경로] approve C-001 --reason "..."
+    my-decide [--dir 경로] reject  C-005 --reason "영수증 없음"
+"""
+import argparse
+import csv
+import getpass
+import os
+import sys
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--dir", default="/tmp/my-demo")
+    ap.add_argument("action", choices=["approve", "reject"])
+    ap.add_argument("claim")
+    ap.add_argument("--reason", required=True)
+    a = ap.parse_args()
+    path = os.path.join(os.path.abspath(a.dir), "decisions.csv")
+    with open(path, "a", newline="", encoding="utf-8") as f:
+        csv.writer(f).writerow([a.claim, a.action, a.reason, getpass.getuser()])
+    print(f"DECIDED: {a.claim} {a.action}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

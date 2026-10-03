@@ -1,0 +1,6 @@
+.env
+results/*.json
+__pycache__/
+.ipynb_checkpoints/
+db/
+results/notes.md
