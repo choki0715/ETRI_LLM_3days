@@ -1,20 +1,20 @@
-{"id": 1, "group": "평범", "doc": "data/docs/01_사무용품_구매계획.txt", "check": {"items": 3, "values": {"복사용지": 120, "토너": 8, "예산": 340}}}
-{"id": 2, "group": "평범", "doc": "data/docs/02_안전교육_일정.txt", "check": {"items": 3, "values": {"인원": 45, "시간": 4, "횟수": 3}}}
-{"id": 3, "group": "평범", "doc": "data/docs/03_연말행사_공지.txt", "check": {"items": 3, "values": {"참석": 180, "경품": 30}, "absent": ["예산"]}}
-{"id": 4, "group": "평범", "doc": "data/docs/04_출장비_기준_개정.txt", "check": {"items": 3, "values": {"숙박": 12, "일비": 3, "정산": 7}}}
-{"id": 5, "group": "평범", "doc": "data/docs/05_신규설비_도입보고.txt", "check": {"items": 3, "values": {"장비": 2, "가동률": 85}}}
-{"id": 6, "group": "평범", "doc": "data/docs/06_9월_생산실적.txt", "check": {"items": 3, "values": {"생산량": 12400, "불량률": 1.8, "가동": 520}}}
-{"id": 7, "group": "평범", "doc": "data/docs/07_신입사원_채용공고.txt", "check": {"items": 3, "values": {"채용": 5, "수습": 3}}}
-{"id": 8, "group": "평범", "doc": "data/docs/08_사내식당_운영변경.txt", "check": {"items": 3, "values": {"식대": 6500, "좌석": 120}}}
-{"id": 9, "group": "평범", "doc": "data/docs/09_재고실사_결과.txt", "check": {"items": 3, "values": {"재고": 3200, "부족": 4}}}
-{"id": 10, "group": "평범", "doc": "data/docs/10_에너지절감_캠페인.txt", "check": {"items": 3, "values": {"절감": 10, "동": 3}}}
-{"id": 11, "group": "경계", "doc": "data/docs/11_정보보호지침_개정_긴문서.txt", "check": {"items": 3, "values": {"비밀번호": 12, "변경": 90, "잠금": 5}}}
-{"id": 12, "group": "경계", "doc": "data/docs/12_회의실_예약규칙_단위없음.txt", "check": {"items": 3, "values": {"예약": 2}}}
-{"id": 13, "group": "경계", "doc": "data/docs/13_주차장공사_항목둘.txt", "check": {"items": 2, "values": {"공사": 10, "폐쇄": 40}}}
-{"id": 14, "group": "경계", "doc": "data/docs/14_협력사평가_한글숫자.txt", "check": {"items": 3, "values": {"대상": 22, "평균": 81.5, "탈락": 3}}}
-{"id": 15, "group": "경계", "doc": "data/docs/15_분기매출_표.txt", "check": {"items": 3, "values": {"1분기": 42, "2분기": 47, "3분기": 51}}}
-{"id": 16, "group": "답없음", "doc": "data/docs/16_동호회안내_수치없음.txt", "check": {"items": 0}}
-{"id": 17, "group": "답없음", "doc": "data/docs/17_복지제도_변경_수치없음.txt", "check": {"items": 0}}
-{"id": 18, "group": "답없음", "doc": "data/docs/18_회의록_예산미정.txt", "check": {"items": 2, "values": {"참석": 7, "회의": 60}, "absent": ["예산"]}}
-{"id": 19, "group": "틀렸던", "doc": "data/docs/19_서류제출_날짜많음.txt", "check": {"items": 3, "values": {"대상": 30}}}
-{"id": 20, "group": "틀렸던", "doc": "data/docs/20_발주서_영문혼용.txt", "check": {"items": 3, "values": {"수량": 500, "단가": 12}}}
+{"id": 1, "group": "평범", "input": "사내 메신저에 로그인이 안 됩니다. 비밀번호를 재설정해주세요.", "check": {"category": "IT", "urgency": "보통", "has": "비밀번호"}}
+{"id": 2, "group": "평범", "input": "프린터 토너가 다 떨어졌습니다. 새 토너 주문 부탁드립니다.", "check": {"category": "비품", "urgency": "낮음"}}
+{"id": 3, "group": "평범", "input": "3층 화장실 조명이 깜빡거립니다. 교체 부탁드립니다.", "check": {"category": "시설", "urgency": "낮음"}}
+{"id": 4, "group": "평범", "input": "다음 주 연차를 쓰려고 하는데 신청 방법을 알려주세요.", "check": {"category": "인사", "urgency": "낮음"}}
+{"id": 5, "group": "평범", "input": "노트북 화면이 갑자기 파랗게 변하면서 꺼졌습니다. 지금 발표 준비 중이라 급합니다.", "check": {"category": "IT", "urgency": "높음"}}
+{"id": 6, "group": "평범", "input": "회의실 화이트보드 마카가 다 말랐습니다. 새 것으로 바꿔주세요.", "check": {"category": "비품", "urgency": "낮음"}}
+{"id": 7, "group": "평범", "input": "사무실 에어컨에서 이상한 소리가 납니다. 확인 부탁드립니다.", "check": {"category": "시설", "urgency": "보통"}}
+{"id": 8, "group": "평범", "input": "이번 달 급여명세서가 메일로 안 왔습니다. 확인해주시겠어요?", "check": {"category": "인사", "urgency": "보통"}}
+{"id": 9, "group": "평범", "input": "신입사원 책상에 의자가 없습니다. 하나 더 구매 부탁드립니다.", "check": {"category": "비품", "urgency": "보통"}}
+{"id": 10, "group": "평범", "input": "주차장 출입 차단기가 고장나서 차가 못 들어오고 있습니다. 지금 바로 확인 부탁드립니다.", "check": {"category": "시설", "urgency": "높음", "has": "주차장"}}
+{"id": 11, "group": "경계", "input": "급한 건 아닌데, 혹시 가능하시면 오늘 중으로 모니터 하나만 더 받을 수 있을까요?", "check": {"category": "비품", "urgency": "낮음"}}
+{"id": 12, "group": "경계", "input": "복도 바닥에 물이 계속 새고 있어서 미끄러질 뻔했습니다. 시간 날 때 한번 봐주세요.", "check": {"category": "시설", "urgency": "높음"}}
+{"id": 13, "group": "경계", "input": "모니터 화면에 자꾸 줄이 생깁니다. 고장인 것 같습니다.", "check": {"category": "IT", "urgency": "보통"}}
+{"id": 14, "group": "경계", "input": "회의실 예약 시스템이 너무 느려서 정말 답답합니다!! 어떻게 좀 해주세요.", "check": {"category": "IT", "urgency": "보통"}}
+{"id": 15, "group": "경계", "input": "출산휴가 중인데 이번 달 급여가 평소보다 적게 들어온 것 같아요.", "check": {"category": "인사", "urgency": "보통"}}
+{"id": 16, "group": "기타", "input": "회사 근처에 괜찮은 점심 식당 추천해주실 수 있나요?", "check": {"category": "기타", "urgency": "낮음"}}
+{"id": 17, "group": "기타", "input": "다음 워크숍은 언제쯤 열릴 예정인지 궁금합니다.", "check": {"category": "기타", "urgency": "낮음"}}
+{"id": 18, "group": "기타", "input": "총무팀 내선번호가 몇 번인지 알려주세요.", "check": {"category": "기타", "urgency": "낮음"}}
+{"id": 19, "group": "틀렸던", "input": "대표님 지시사항인데 내일 아침까지 급하게 노트북 10대를 새로 사야 합니다.", "check": {"category": "비품", "urgency": "높음", "has": "노트북"}}
+{"id": 20, "group": "틀렸던", "input": "Please check the AC unit in Room 302, it's making weird noise. 급한 건 아니에요.", "check": {"category": "시설", "urgency": "낮음"}}

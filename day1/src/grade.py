@@ -1,6 +1,7 @@
 """Day 1 블록 4 · 채점 코드.
 
 같은 20문항(tests.jsonl)에 프롬프트를 돌려 통과 수와 실패 유형을 센다.
+과제: 사내 문의 메시지 하나를 받아 카테고리·긴급도·요약으로 분류한다.
 
     python -m src.grade prompts/prompt_v1.txt
     python -m src.grade prompts/prompt_v1.txt prompts/prompt_v2.txt      # 나란히 비교
@@ -8,7 +9,7 @@
     python -m src.grade prompts/prompt_v3.txt --all-models                # 3차
 
 프롬프트 파일 규칙
-- 파일 안의 {document} 자리에 문서가 들어간다.
+- 파일 안의 {document} 자리에 문의 내용이 들어간다.
 - 파일 맨 위에 '=== system ===' / '=== user ===' 구분선을 두면 system과 user로 나눠 보낸다.
   구분선이 없으면 파일 전체가 user 메시지가 된다.
 """
@@ -37,12 +38,14 @@ MISSING = "지시 일부 누락"
 INVENTED = "지어냄"
 KINDS = [FORMAT, FACT, MISSING, INVENTED]
 
-MAX_ITEMS = 3
+# 정해진 보기 — 모델은 이 안에서만 골라야 한다
+CATEGORIES = ["비품", "시설", "인사", "IT", "기타"]
+URGENCY = ["높음", "보통", "낮음"]
 
 
 # ---------------------------------------------------------------- 테스트 읽기
 def load_tests(path: str | Path = TESTS) -> list[dict]:
-    """tests.jsonl을 읽는다. 문항마다 문서 본문을 t["input"]에 채워 둔다."""
+    """tests.jsonl을 읽는다. "input"이 있으면 그대로, "doc" 경로면 파일을 읽어 채운다."""
     path = Path(path)
     if not path.is_absolute():
         path = ROOT / path
@@ -71,7 +74,7 @@ def split_prompt(prompt: str) -> tuple[str | None, str]:
 def build(prompt: str, document: str) -> tuple[str | None, str]:
     system, user = split_prompt(prompt)
     if "{document}" not in user and (system is None or "{document}" not in system):
-        user = user.rstrip() + "\n\n<문서>\n{document}\n</문서>"   # 자리를 잊었을 때
+        user = user.rstrip() + "\n\n<문의>\n{document}\n</문의>"   # 자리를 잊었을 때
     if system:
         system = llm.render(system, document=document)
     return system, llm.render(user, document=document)
@@ -81,7 +84,7 @@ def build(prompt: str, document: str) -> tuple[str | None, str]:
 def parse(text: str):
     """모델 출력에서 JSON을 꺼낸다.
 
-    1) <json> … </json> 태그가 있으면 그 안만 쓴다 (기법 6 · 태그로 감싸게 한다)
+    1) <json> … </json> 태그가 있으면 그 안만 쓴다 (출력 형식을 태그로 감싸게 한다)
     2) 없으면 출력 전체를 그대로 json.loads 한다 — 앞뒤에 설명이 붙으면 실패
     실패하면 ValueError
     """
@@ -94,52 +97,20 @@ def parse(text: str):
         raise ValueError(f"JSON이 아님: {e.msg} (위치 {e.pos})") from None
 
 
-def _is_num(v) -> bool:
-    return isinstance(v, (int, float)) and not isinstance(v, bool)
-
-
 def schema_errors(out) -> list[str]:
-    """목표 JSON 모양: {"제목": str, "항목": [{"이름": str, "값": number|null, "단위": str|null}]}"""
-    errs = []
+    """목표 JSON 모양: {"카테고리": 보기 중 하나, "긴급도": 보기 중 하나, "요약": str}"""
     if not isinstance(out, dict):
         return ["최상위가 객체가 아님"]
-    if not isinstance(out.get("제목"), str):
-        errs.append("'제목'이 문자열이 아님")
-    items = out.get("항목")
-    if not isinstance(items, list):
-        return errs + ["'항목'이 목록이 아님"]
-    for i, it in enumerate(items):
-        if not isinstance(it, dict):
-            errs.append(f"항목[{i}]이 객체가 아님")
-            continue
-        if not isinstance(it.get("이름"), str):
-            errs.append(f"항목[{i}] '이름'이 문자열이 아님")
-        if "값" not in it or not (it["값"] is None or _is_num(it["값"])):
-            errs.append(f"항목[{i}] '값'이 숫자가 아님: {it.get('값')!r}")
-        if "단위" not in it or not (it["단위"] is None or isinstance(it["단위"], str)):
-            errs.append(f"항목[{i}] '단위'가 문자열이 아님")
+    errs = []
+    cat = out.get("카테고리")
+    if cat not in CATEGORIES:
+        errs.append(f"'카테고리'가 보기 중에 없음: {cat!r} (보기: {', '.join(CATEGORIES)})")
+    urg = out.get("긴급도")
+    if urg not in URGENCY:
+        errs.append(f"'긴급도'가 보기 중에 없음: {urg!r} (보기: {', '.join(URGENCY)})")
+    if not isinstance(out.get("요약"), str) or not out["요약"].strip():
+        errs.append("'요약'이 없거나 빈 문자열임")
     return errs
-
-
-# ---------------------------------------------------------------- 숫자 비교
-# "340만원"을 340(단위 만원)으로 뽑든 3400000(단위 원)으로 뽑든 둘 다 맞게 본다
-_SCALES = (1, 10_000, 100_000_000)
-
-
-def same_number(got, want) -> bool:
-    if not _is_num(got):
-        return False
-    for k in _SCALES:
-        if abs(got - want * k) <= 1e-6 * max(1, abs(want * k)):
-            return True
-    return False
-
-
-def _find(items, key):
-    for it in items:
-        if isinstance(it.get("이름"), str) and key in it["이름"].replace(" ", ""):
-            return it
-    return None
 
 
 # ---------------------------------------------------------------- 판정
@@ -147,10 +118,10 @@ def check(text: str, spec: dict) -> tuple[bool, str | None, str]:
     """출력 하나를 판정한다 → (통과 여부, 실패 유형, 설명)
 
     판정 순서 — 앞에서 걸리면 거기서 멈춘다
-      1. 형식 위반     JSON이 아니거나 모양이 다르다
-      2. 지어냄        문서에 없는 값을 채웠다 (absent 이름에 값이 있음, 답없음 문서에 항목이 있음)
-      3. 지시 일부 누락 값이 있는 항목 수가 items와 다르다 (값이 null인 항목은 세지 않는다)
-      4. 사실 오류     values의 숫자와 다르다
+      1. 형식 위반     JSON이 아니거나, 카테고리·긴급도가 정해진 보기 밖이거나, 요약이 없다
+      2. 지어냄        정답이 "기타"인데 구체적인 카테고리를 지어냄
+      3. 지시 일부 누락 요약에 꼭 있어야 할 말(has)이 없다
+      4. 사실 오류     카테고리 또는 긴급도가 정답과 다르다
     """
     try:
         out = parse(text)
@@ -160,37 +131,23 @@ def check(text: str, spec: dict) -> tuple[bool, str | None, str]:
     if errs:
         return False, FORMAT, "; ".join(errs[:2])
 
-    items = out["항목"]
-    filled = [it for it in items if it["값"] is not None]
+    cat, urg, summary = out["카테고리"], out["긴급도"], out["요약"]
+    want_cat = spec["category"]
 
-    # 2. 지어냄
-    for name in spec.get("absent", []):
-        it = _find(items, name)
-        if it and it["값"] is not None:
-            return False, INVENTED, f"문서에 없는 '{name}'에 값 {it['값']}을 채움"
-    if spec.get("items") == 0 and filled:
-        return False, INVENTED, f"수치가 없는 문서에서 {len(filled)}개를 뽑음: " + \
-            ", ".join(f"{it['이름']}={it['값']}" for it in filled[:3])
+    # 2. 지어냄 — 정답 없음(기타)인데 그럴듯한 카테고리를 만들어냄
+    if want_cat == "기타" and cat != "기타":
+        return False, INVENTED, f"'기타'여야 하는데 '{cat}'를 지어냄"
 
-    # 3. 지시 일부 누락
-    want = spec.get("items")
-    if len(filled) > MAX_ITEMS:
-        return False, MISSING, f"값이 있는 항목 {len(filled)}개 — 최대 {MAX_ITEMS}개"
-    if want is not None and len(filled) != want:
-        return False, MISSING, f"값이 있는 항목 {len(filled)}개 — 기대 {want}개"
-    for word in ([spec["has"]] if isinstance(spec.get("has"), str) else spec.get("has", [])):
-        if word not in json.dumps(out, ensure_ascii=False):
-            return False, MISSING, f"'{word}'가 답에 없음"
+    # 3. 지시 일부 누락 — 요약에 꼭 들어가야 할 말이 없음
+    word = spec.get("has")
+    if word and word not in summary:
+        return False, MISSING, f"요약에 '{word}'가 없음: {summary!r}"
 
-    # 4. 사실 오류
-    for key, val in spec.get("values", {}).items():
-        it = _find(filled, key)
-        if it is not None and same_number(it["값"], val):
-            continue
-        if any(same_number(x["값"], val) for x in filled):   # 이름이 달라도 값이 맞으면 통과
-            continue
-        got = f"{it['이름']}={it['값']}" if it else "해당 항목 없음"
-        return False, FACT, f"'{key}' 기대 {val}, 출력 {got}"
+    # 4. 사실 오류 — 카테고리 · 긴급도가 정답과 다름
+    if cat != want_cat:
+        return False, FACT, f"카테고리 기대 '{want_cat}', 출력 '{cat}'"
+    if urg != spec["urgency"]:
+        return False, FACT, f"긴급도 기대 '{spec['urgency']}', 출력 '{urg}'"
 
     return True, None, ""
 
@@ -199,7 +156,7 @@ def check(text: str, spec: dict) -> tuple[bool, str | None, str]:
 def _one(prompt, t, model):
     system, user = build(prompt, t["input"])
     try:
-        r = llm.call(user, system, model=model, max_tokens=1000)
+        r = llm.call(user, system, model=model, max_tokens=500)
     except Exception as e:                                    # 네트워크 · 키 오류도 기록
         return dict(id=t["id"], group=t.get("group", ""), ok=False, kind="호출 실패",
                     why=f"{type(e).__name__}: {e}", text="", input_tokens=0, output_tokens=0,

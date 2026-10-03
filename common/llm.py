@@ -133,7 +133,7 @@ def load_prompt(path: str | Path) -> str:
 def _mock(messages, system, model) -> Result:
     last = messages[-1]["content"]
     if "json" in (system or "").lower() + last.lower():
-        text = '{"제목": "모의 응답", "항목": []}'
+        text = '{"카테고리": "기타", "긴급도": "낮음", "요약": "모의 응답"}'
     else:
         text = f"[모의 응답] 받은 메시지 {len(messages)}개 · 마지막 질문 앞부분: {last[:30]}"
     n_in = sum(len(m["content"]) if isinstance(m["content"], str) else 50 for m in messages) // 2
