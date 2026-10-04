@@ -391,7 +391,16 @@ try_prompt(v0, doc)'''),
 | 원하는 JSON 모양을 그대로 보여주기 | `<출력 형식>` |
 
 파일 맨 위 `=== system ===` 아래는 system으로, `=== user ===` 아래는 user로 보냅니다. `{document}` 자리에 문의가 들어갑니다."""),
-    C('''v1 = llm.load_prompt("prompts/prompt_v1.txt")      # 파일을 고친 뒤 이 셀을 다시 실행
+    C('''V1_PATH = "prompts/prompt_v1.txt"      # ✏️ 내 것 대신 풀이본을 보려면 "solutions/prompts/prompt_v1.txt"
+v1 = llm.load_prompt(V1_PATH)           # 파일을 고친 뒤 이 셀을 다시 실행
+
+if "TODO" in v1:
+    print("=" * 70)
+    print("⚠️  prompt_v1.txt 에 아직 TODO 가 남아 있습니다.")
+    print("    채우기 전까지는 이 셀부터 아래 셀 전부가 '실패'로 나옵니다 — 그게 정상입니다.")
+    print("    3절 표를 한 줄씩 채우고 이 셀을 다시 실행하세요.")
+    print("=" * 70, "\\n")
+
 try_prompt(v1, doc)'''),
     M("""> 막히면 `solutions/prompts/prompt_v1.txt`를 열어 봅니다. 그대로 베끼기보다, 내 v1과 **무엇이 다른지** 비교합니다."""),
     M("""## 4. 짝 점검 체크리스트
