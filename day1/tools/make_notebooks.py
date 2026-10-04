@@ -66,6 +66,19 @@ print("stop_reason :", r.stop_reason)
 print("입력 토큰   :", r.input_tokens)
 print("출력 토큰   :", r.output_tokens)
 print("걸린 시간   :", f"{r.seconds:.2f}초")'''),
+    M("""### 토큰 숫자 안에 숨은 것
+`r.input_tokens`·`r.output_tokens`는 `llm.py`가 보기 좋게 뽑아 둔 숫자일 뿐입니다. 실제로 돌아온 응답(`r.raw`)에는 그보다 훨씬 많은 정보가 들어 있고, 토큰 숫자 자체도 **내가 쓴 글자 수에 비례하지 않습니다** — 메시지에는 역할 표시 같은, 눈에 안 보이는 틀이 섞여 있습니다."""),
+    C('''r = llm.call("안녕", max_tokens=20)
+print("우리가 보통 보는 것:", r.input_tokens, "입력 /", r.output_tokens, "출력")
+print()
+print("실제로 돌아온 응답 전체:")
+print(r.raw)'''),
+    M("""위 출력에 `cache_creation_input_tokens` · `cache_read_input_tokens`(캐시 사용량) · `service_tier`(처리 등급) · `inference_geo`(추론 지역) · `id`(요청 번호) 같은 게 같이 와 있습니다. `Result`는 이 중 지금 당장 필요한 몇 개만 뽑아 보여주는 겁니다."""),
+    C('''print("'안'        (1글자) →", llm.count_tokens("안"), "토큰")
+print("'안녕'       (2글자) →", llm.count_tokens("안녕"), "토큰")
+print("'안녕하세요'  (5글자) →", llm.count_tokens("안녕하세요"), "토큰")
+print("'안' + system      →", llm.count_tokens("안", system="너는 친절한 비서다"), "토큰  (system 10글자 추가)")'''),
+    M("""**1글자("안")만 보내도 토큰이 여러 개 나옵니다.** 메시지 역할(user · assistant) 표시 같은 **고정된 틀**에 드는 토큰이 내용과 별도로 매번 섞여 있기 때문입니다. `system`을 추가하면 그 틀이 하나 더 붙어서 토큰이 더 뜁니다 — 글자 수만 보고 토큰 수를 어림잡으면 안 되는 이유입니다."""),
     M("""### max_tokens에서 잘리면
 `max_tokens`를 작게 주면 글이 중간에 끊기고 `stop_reason`이 `max_tokens`가 됩니다.
 **프로그램은 글을 쓰기 전에 `stop_reason`부터 확인합니다** — 잘린 JSON은 파싱이 깨집니다."""),
