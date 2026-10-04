@@ -574,9 +574,13 @@ from src.grade import load_tests, run, check, summarize, save, print_table, prin
 | `urgency` | 이 값과 같은 긴급도여야 통과 |
 | `has` | 요약 어딘가에 이 말이 있어야 통과 (없으면 생략) |"""),
     C('''tests = load_tests()
-print(Counter(t["group"] for t in tests))
-for t in tests[:3] + tests[15:18]:
-    print(t["id"], t["group"], t["input"][:30], t["check"])'''),
+print("종류별 문항 수:", dict(Counter(t["group"] for t in tests)), "\\n")
+
+# 종류마다 첫 문항 하나씩 — 문의 본문과 통과 조건(check)이 어떻게 적혀 있는지 본다
+for group in ["평범", "경계", "기타", "틀렸던"]:
+    t = next(t for t in tests if t["group"] == group)
+    print(f"[{group}] #{t['id']:>2}  {t['input']}")
+    print(f"        check = {t['check']}\\n")'''),
     M("""## 2. check — 판정 규칙
 `check(출력, 통과 조건)` → `(통과 여부, 실패 유형, 설명)`. 모델 없이 **가짜 출력**으로 먼저 돌려, 판정기가 네 유형을 어떻게 가르는지 봅니다.
 판정 순서: **형식 위반 → 지어냄 → 지시 일부 누락 → 사실 오류** — 앞에서 걸리면 거기서 멈춥니다."""),
