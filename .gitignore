@@ -3,10 +3,10 @@ __pycache__/
 .pytest_cache/
 *.pyc
 .env
-results/run_*.json
-results/scoreboard.csv
-results/repeat5.json
-results/notes.md
+**/results/run_*.json
+**/results/scoreboard.csv
+**/results/repeat5.json
+**/results/notes.md
 day2/data/kb/.chroma/
 day2/db/
 .DS_Store
