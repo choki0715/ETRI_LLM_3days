@@ -419,7 +419,11 @@ print(r.text.strip())
 
 m = re.search(r"<근거>(.*?)</근거>", r.text, re.S)
 print("\\n→ 코드가 디버깅용으로 꺼낸 <근거>:", (m.group(1).strip() if m else "(없음)"))
-print("→ parse() 결과(<json>만 읽음):", parse(r.text))'''),
+try:
+    print("→ parse() 결과(<json>만 읽음):", parse(r.text))
+except ValueError as e:
+    print("→ parse() 실패:", e)
+    print("   v1의 <출력 형식>에 '<json></json> 안에만 써라'가 들어 있는지 확인하세요 — 3절로 돌아갑니다.")'''),
     M("""## 6. 한 덩어리 일을 세 단계로 나눈다 — 분류하기(모델) → 검사하기(코드) → 답장 쓰기(모델)
 이 절은 프롬프트를 잘 쓰는 기술이 아니라 **작업을 어떻게 나눌지**에 대한 얘기입니다. 프롬프트로 해결하려 하지 말고 코드로 해야 하는 부분이 있다는 것을 봅니다.
 
