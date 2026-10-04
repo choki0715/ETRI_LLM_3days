@@ -128,7 +128,31 @@ for i, user_text in enumerate(turns, 1):
     print()
 
     history = messages + [{"role": "assistant", "content": r.text}]'''),
-    M("""**1턴**은 `messages`에 내가 보낸 말 하나뿐이지만, **2턴**은 1턴의 내 말 + 모델의 답 + 이번 내 말, **세 개**가 들어갑니다. 이력 없이 "제 이름과 부서가 뭐였죠?"만 물으면 모델은 모릅니다 — 매번 **지금까지 오간 것 전부**를 다시 보내야 기억하는 것처럼 보입니다. 위 출력에서 두 응답의 `usage.input_tokens`를 직접 비교해 보세요 — 2턴째가 더 큽니다. 대화가 길어질수록 매번 더 커집니다."""),
+    M("""**1턴**은 `messages`에 내가 보낸 말 하나뿐이지만, **2턴**은 1턴의 내 말 + 모델의 답 + 이번 내 말, **세 개**가 들어갑니다. 이력 없이 "제 이름과 부서가 뭐였죠?"만 물으면 모델은 모릅니다 — 매번 **지금까지 오간 것 전부**를 다시 보내야 기억하는 것처럼 보입니다. 위 출력에서 두 응답의 `usage.input_tokens`를 직접 비교해 보세요 — 2턴째가 더 큽니다. 대화가 길어질수록 매번 더 커집니다.
+
+**요청보다 응답에 훨씬 많은 게 따라옵니다.** 요청은 `model`·`max_tokens`·`messages`, 딱 3가지뿐이었습니다. 방금 받은 마지막 응답(`r`) 하나를 열어서, 거기 뭐가 더 들어있는지 하나씩 짚어 봅니다."""),
+    C('''u = r.raw.usage
+print("요청에는 모델 이름 · max_tokens · messages, 이 3가지만 넣었습니다.")
+print("마지막 턴의 응답(r.raw)에는 그보다 훨씬 많은 게 같이 옵니다:\\n")
+print(f"  id                                : {r.raw.id}")
+print(f"      내가 보낸 적 없음 — 이 응답 하나를 가리키는 고유 번호")
+print(f"  stop_reason                       : {r.raw.stop_reason}")
+print(f"      내가 물은 적 없음 — 왜 멈췄는지(end_turn · max_tokens · tool_use · ...)")
+print(f"  stop_sequence                     : {r.raw.stop_sequence}")
+print(f"      어떤 중단 문자열에 걸렸는지 (안 걸리면 None)")
+print(f"  model                             : {r.raw.model}")
+print(f"      실제로 처리한 모델 — 요청에 쓴 이름과 같아야 정상")
+print(f"  usage.input_tokens / output_tokens: {u.input_tokens} / {u.output_tokens}")
+print(f"      우리가 Result로 뽑아 쓰는 바로 그 숫자")
+print(f"  usage.cache_creation_input_tokens : {u.cache_creation_input_tokens}")
+print(f"      프롬프트 캐시에 이번에 새로 쓴 토큰 수 (지금은 캐시를 안 써서 0)")
+print(f"  usage.cache_read_input_tokens     : {u.cache_read_input_tokens}")
+print(f"      캐시에서 그냥 읽어서 싸게 처리한 토큰 수")
+print(f"  usage.service_tier                : {u.service_tier}")
+print(f"      이번 요청이 처리된 등급")
+print(f"  usage.inference_geo               : {u.inference_geo}")
+print(f"      추론이 실제로 일어난 지역")'''),
+    M("""요청 쪼은 3가지뿐인데, 응답 쪼은 이렇게 **9가지가 넘는 부가 정보**가 따라옵니다. `r.text`만 보면 이 중 거의 전부를 놓치는 겁니다 — `llm.py`의 `Result`는 당장 쓸모 있는 몇 개(`text`·`stop_reason`·토큰 수)만 추려 둔 것뿐이고, 나머지는 `r.raw`를 직접 열어야 보입니다."""),
     M("""## 5. 같은 질문 다섯 번
 같은 질문을 두 가지로 각각 5회 보내고 결과를 나란히 놓습니다.
 
