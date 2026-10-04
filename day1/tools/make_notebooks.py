@@ -166,6 +166,7 @@ API는 매 호출이 처음입니다. 이어서 대화하려면 **앞서 주고�
     C('''import json
 
 history = []
+sent = []          # 턴마다 (보낸 messages, 응답) 을 남겨 둔다 — 아래에서 토큰 수를 검산한다
 turns = [
     "제 이름은 김민수이고, 생산관리팀에서 일합니다.",
     "제 이름과 부서가 뭐였죠?",
@@ -178,13 +179,32 @@ for i, user_text in enumerate(turns, 1):
     print(json.dumps(request, ensure_ascii=False, indent=2))
 
     r = llm.call(user_text, history=history, max_tokens=100)
+    sent.append((messages, r))
 
     print("\\n--- 돌아온 응답 전체 ---")
     print(r.raw)
     print()
 
     history = messages + [{"role": "assistant", "content": r.text}]'''),
-    M("""**1턴**은 `messages`에 내가 보낸 말 하나뿐이지만, **2턴**은 1턴의 내 말 + 모델의 답 + 이번 내 말, **세 개**가 들어갑니다. 이력 없이 "제 이름과 부서가 뭐였죠?"만 물으면 모델은 모릅니다 — 매번 **지금까지 오간 것 전부**를 다시 보내야 기억하는 것처럼 보입니다. 위 출력에서 두 응답의 `usage.input_tokens`를 직접 비교해 보세요 — 2턴째가 더 큽니다. 대화가 길어질수록 매번 더 커집니다.
+    M("""**1턴**은 `messages`에 내가 보낸 말 하나뿐이지만, **2턴**은 1턴의 내 말 + 모델의 답 + 이번 내 말, **세 개**가 들어갑니다. 이력 없이 "제 이름과 부서가 뭐였죠?"만 물으면 모델은 모릅니다 — 매번 **지금까지 오간 것 전부**를 다시 보내야 기억하는 것처럼 보입니다.
+
+### 멀티턴 입력 토큰은 이 식으로 정확히 맞는다
+2절에서 메시지 하나의 포장이 **3**, 대화 틀이 **4**였습니다. 턴이 쌓이면:
+
+```
+input_tokens = 4 + Σ (3 + 메시지 내용 토큰)     ← 지금까지 쌓인 모든 메시지에 대해
+```
+
+아래 셀이 방금 돌린 두 턴의 실제 `usage.input_tokens`와 이 식을 대조합니다. (메시지 하나의 내용 토큰 = 그것만 따로 센 값 − 7)"""),
+    C('''content = lambda s: llm.count_tokens(s) - 7      # 메시지 1개 측정값 − 틀 7 = 순수 내용 토큰
+
+for i, (messages, r) in enumerate(sent, 1):
+    pieces = [content(m["content"]) for m in messages]
+    pred = 4 + sum(3 + p for p in pieces)
+    ok = "✓" if pred == r.input_tokens else "✗"
+    print(f"{i}턴: 메시지 {len(messages)}개, 내용 토큰 {pieces}")
+    print(f"     4 + Σ(3+내용) = {pred}   실제 input_tokens = {r.input_tokens}   {ok}")'''),
+    M("""2턴째 내용 토큰 가운데 가장 큰 덩어리는 **1턴에서 모델이 출력한 답**입니다. 1턴엔 `output_tokens`로 냈던 것을 2턴엔 `input_tokens`로 **다시** 냅니다 — 멀티턴에서 비용이 빨리 불어나는 진짜 이유입니다. 메시지당 틀 3개도 매번 전부 다시 들어갑니다.
 
 **요청보다 응답에 훨씬 많은 게 따라옵니다.** 요청은 `model`·`max_tokens`·`messages`, 딱 3가지뿐이었습니다. 방금 받은 마지막 응답(`r`) 하나를 열어서, 거기 뭐가 더 들어있는지 하나씩 짚어 봅니다."""),
     C('''u = r.raw.usage
