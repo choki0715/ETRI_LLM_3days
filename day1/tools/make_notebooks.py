@@ -416,40 +416,41 @@ try_prompt(v0, doc)'''),
 {document}
 </문의>"""
 
-Path("prompts").mkdir(exist_ok=True)
-results = []          # (단계, 파일, 통과 수, 값들) — 마지막에 비교표로 쓴다
+# ✏️ 단계 목록 — 위에서부터 하나씩 더해진다. 문장을 고치고 아래 셀을 다시 실행해 보세요.
+STEPS = [
+    # (채울 태그,  넣을 문장)
+    ("출력 형식", "설명이나 코드블록(```) 없이, 아래처럼 <json></json> 태그 안에만 써라. 그 외에는 아무것도 쓰지 않는다.\\n"
+                  '<json>{"카테고리": "…", "긴급도": "…", "요약": "…"}</json>'),
 
-def step(n, tag, body, prev):
-    """prev 프롬프트의 <tag> 안쪽을 body로 채워 prompts/prompt_{n}.txt 로 저장하고 3번 돌린다."""
-    cur = re.sub(rf"<{tag}>.*?</{tag}>", f"<{tag}>\\n{body}\\n</{tag}>", prev, flags=re.S)
-    path = Path(f"prompts/prompt_{n}.txt"); path.write_text(cur, encoding="utf-8")
+    ("역할",      "너는 총무팀 헬프데스크 담당자다. 직원이 보낸 문의 메시지를 읽고 분류한다."),
+
+    ("할 일",     "<문의>를 아래 기준으로 분류하라.\\n"
+                  "- 카테고리: 비품(소모품·책상·의자 등 구매 요청) · 시설(냉난방·조명·주차장·건물 설비) · "
+                  "인사(연차·급여·휴가) · IT(컴퓨터·네트워크·계정·장비 고장) · 기타(위 네 가지에 뚜렷이 안 맞을 때)\\n"
+                  "- 긴급도: 높음 · 보통 · 낮음\\n"
+                  "- 요약: 한 줄"),
+
+    ("예시",      '문의: "에어컨 필터 청소가 필요합니다."\\n'
+                  '정답: <json>{"카테고리": "시설", "긴급도": "낮음", "요약": "에어컨 필터 청소 요청"}</json>'),
+]'''),
+    C('''Path("prompts").mkdir(exist_ok=True)
+results = []                      # (단계, 태그, 통과 수, 값들) — 마지막 비교표에 쓴다
+
+print("0) 빈 틀 (아무 요소도 없음)")
+_, vals0 = try_prompt(TEMPLATE, doc, n=3, show=False)
+print("   모델이 낸 값:", vals0, "\\n")
+
+cur = TEMPLATE
+for n, (tag, body) in enumerate(STEPS, 1):
+    cur = re.sub(rf"<{tag}>.*?</{tag}>", f"<{tag}>\\n{body}\\n</{tag}>", cur, flags=re.S)   # <tag> 안쪽을 채운다
+    path = Path(f"prompts/prompt_{n}.txt")
+    path.write_text(cur, encoding="utf-8")                                                   # 단계마다 파일로 저장
     print(f"===== prompt_{n}: <{tag}> 추가 → {path} =====")
     ok, vals = try_prompt(cur, doc, n=3, show=False)
     print("   모델이 낸 값:", vals, "\\n")
     results.append((n, tag, ok, vals))
-    return cur
 
-print("0) 빈 틀 (아무 요소도 없음)")
-_, vals0 = try_prompt(TEMPLATE, doc, n=3, show=False); print("   모델이 낸 값:", vals0, "\\n")'''),
-    C('''# ✏️ 1단계 — 출력 형식
-FORMAT = ("설명이나 코드블록(```) 없이, 아래처럼 <json></json> 태그 안에만 써라. 그 외에는 아무것도 쓰지 않는다.\\n"
-          '<json>{"카테고리": "…", "긴급도": "…", "요약": "…"}</json>')
-p1 = step(1, "출력 형식", FORMAT, TEMPLATE)'''),
-    C('''# ✏️ 2단계 — 역할
-ROLE = "너는 총무팀 헬프데스크 담당자다. 직원이 보낸 문의 메시지를 읽고 분류한다."
-p2 = step(2, "역할", ROLE, p1)'''),
-    C('''# ✏️ 3단계 — 할 일 (카테고리 · 긴급도를 뭘 기준으로 고르는지)
-TASK = ("<문의>를 아래 기준으로 분류하라.\\n"
-        "- 카테고리: 비품(소모품·책상·의자 등 구매 요청) · 시설(냉난방·조명·주차장·건물 설비) · "
-        "인사(연차·급여·휴가) · IT(컴퓨터·네트워크·계정·장비 고장) · 기타(위 네 가지에 뚜렷이 안 맞을 때)\\n"
-        "- 긴급도: 높음 · 보통 · 낮음\\n"
-        "- 요약: 한 줄")
-p3 = step(3, "할 일", TASK, p2)'''),
-    C('''# ✏️ 4단계 — 예시 (최종)
-EXAMPLE = ('문의: "에어컨 필터 청소가 필요합니다."\\n'
-           '정답: <json>{"카테고리": "시설", "긴급도": "낮음", "요약": "에어컨 필터 청소 요청"}</json>')
-p4 = step(4, "예시", EXAMPLE, p3)
-final = p4'''),
+final = cur                        # 마지막 단계 = 최종 프롬프트 (prompts/prompt_4.txt)'''),
     M("""### 최종 프롬프트(prompt_4)는 v0에서 뭐가 좋아졌나
 네 단계의 결과를 한 표로 놓고, 최종 프롬프트 전문을 봅니다."""),
     C('''print(f"{'단계':<6}{'추가한 요소':<10}{'통과':<8}모델이 낸 값")
