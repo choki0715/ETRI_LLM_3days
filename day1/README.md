@@ -27,7 +27,7 @@ jupyter lab                        # notebooks/ 를 연다
 |---|---|---|---|
 | 09:00–10:30 | 1 LLM이 글을 쓰는 법 | (실습 노트북 없음 — 슬라이드 · 채팅 화면) | — |
 | 10:40–11:40 | 2 API와 메시지 | 25분 · 첫 호출 · 응답 읽기 · 기억하지 않음 · 다섯 번 · 비용 | `notebooks/01_api_basics.ipynb` |
-| 11:50–15:00 | 3 프롬프트 설계 | 60분 · v0 → v1 · 생각할 자리 · 나눠 시키기 · 일반화된 프롬프트 적용 | `notebooks/02_prompt_design.ipynb` · `prompts/` |
+| 11:50–15:00 | 3 프롬프트 설계 | 60분 · v0 → prompt_1~4 (요소를 하나씩 더하며) · 근거 활용 | `notebooks/02_prompt_design.ipynb` · `prompts/` |
 | 15:10–16:40 | 4 평가 | 50분 · 20문항 · v1 채점 · v2 · v3 · 모델 비교 | `notebooks/03_evaluation.ipynb` · `src/grade.py` |
 
 ## 3. 폴더
@@ -36,9 +36,9 @@ jupyter lab                        # notebooks/ 를 연다
 day1/
 ├─ src/
 │  └─ grade.py          parse() · check() · run() — 채점 코드 (블록 4)
-├─ prompts/             수강생이 고치는 곳
-│  ├─ prompt_v0.txt     한 줄짜리 지시
-│  └─ prompt_v1.txt     TODO 틀 — 채워서 완성한다
+├─ prompts/             수강생 프롬프트
+│  ├─ prompt_v0.txt     한 줄짜리 지시 (출발점)
+│  └─ prompt_1~4.txt    02 노트북이 요소를 하나씩 더하며 생성 — prompt_4 가 최종(v1)
 ├─ solutions/prompts/   강사 풀이본 v1 · v2 · v3
 ├─ data/
 │  ├─ docs/             블록 2(비용 계산)에서만 쓰는 긴 문서 1편
@@ -52,10 +52,10 @@ day1/
 ## 4. 채점을 명령줄로
 
 ```bash
-python -m src.grade prompts/prompt_v1.txt
-python -m src.grade prompts/prompt_v1.txt prompts/prompt_v2.txt --note "긴급도 기준 추가"
+python -m src.grade prompts/prompt_4.txt
+python -m src.grade prompts/prompt_4.txt prompts/prompt_v2.txt --note "긴급도 기준 추가"
 python -m src.grade solutions/prompts/prompt_v3.txt --all-models     # 3차
-python -m src.grade prompts/prompt_v1.txt --only 16-18                # 일부 문항만
+python -m src.grade prompts/prompt_4.txt --only 16-18                # 일부 문항만
 ```
 
 실행할 때마다 `results/run_*.json`(문항별 출력)과 `results/scoreboard.csv`(결과표 한 줄)가 남습니다.
@@ -113,7 +113,7 @@ python -m src.grade prompts/prompt_v1.txt --only 16-18                # 일부 �
 ## 6. 모의 모드 (키 없이 흐름 확인)
 
 ```bash
-LLM_MOCK=1 python -m src.grade prompts/prompt_v1.txt     # Windows PowerShell: $env:LLM_MOCK="1"
+LLM_MOCK=1 python -m src.grade prompts/prompt_4.txt     # Windows PowerShell: $env:LLM_MOCK="1"
 ```
 
 `.env`에서 `LLM_MOCK=1`로 두어도 됩니다. API를 부르지 않고 고정된 응답(`{"카테고리": "기타", "긴급도": "낮음", "요약": "모의 응답"}`)을 돌려줍니다. **점수는 의미가 없고**, 노트북 · 채점 · 결과 저장이 끝까지 도는지만 봅니다. 강사 리허설과 네트워크가 막힌 강의장 대비용입니다.

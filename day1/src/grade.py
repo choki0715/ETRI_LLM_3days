@@ -3,8 +3,8 @@
 같은 20문항(tests.jsonl)에 프롬프트를 돌려 통과 수와 실패 유형을 센다.
 과제: 사내 문의 메시지 하나를 받아 카테고리·긴급도·요약으로 분류한다.
 
-    python -m src.grade prompts/prompt_v1.txt
-    python -m src.grade prompts/prompt_v1.txt prompts/prompt_v2.txt      # 나란히 비교
+    python -m src.grade prompts/prompt_4.txt
+    python -m src.grade prompts/prompt_4.txt prompts/prompt_v2.txt       # 나란히 비교
     python -m src.grade solutions/prompts/prompt_v3.txt --model claude-haiku-4-5-20251001
     python -m src.grade prompts/prompt_v3.txt --all-models                # 3차
 
