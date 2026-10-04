@@ -55,8 +55,11 @@ nb01 = [
         messages=[{"role": "user", "content": "연차 신청 절차를 세 단계로 알려줘"}],
     )
     print(r.content[0].text)
+    print("\\n--- r에 저장된 것 전체 (글은 그중 하나일 뿐) ---")
+    print(r)
 else:
     print("모의 모드 — 건너뜀")'''),
+    M("""`r`은 글 하나가 아니라 `id`·`role`·`type`·`content`(블록 리스트)·`stop_reason`·`stop_sequence`·`model`·`usage`(입력/출력 토큰 · 캐시 사용량 · 처리 등급 등)·`container`·`diagnostics`·`stop_details`까지 다 들어있는 객체입니다. `r.content[0].text`는 그중 **글자만** 꺼낸 것이고, 나머지는 뒤에서(2·4절) 하나씩 다룹니다."""),
     M("""## 2. 응답 읽기
 응답에는 글 말고도 **왜 멈췄는지**(`stop_reason`)와 **토큰을 얼마나 썼는지**(`usage`)가 들어 있습니다."""),
     C('''r = llm.call("연차 신청 절차를 세 단계로 알려줘", max_tokens=300)
@@ -132,8 +135,28 @@ for i, user_text in enumerate(turns, 1):
 
 **요청보다 응답에 훨씬 많은 게 따라옵니다.** 요청은 `model`·`max_tokens`·`messages`, 딱 3가지뿐이었습니다. 방금 받은 마지막 응답(`r`) 하나를 열어서, 거기 뭐가 더 들어있는지 하나씩 짚어 봅니다."""),
     C('''u = r.raw.usage
+block = r.raw.content[0]      # 우리가 r.text로 쓰는 게 바로 이 블록의 .text
 print("요청에는 모델 이름 · max_tokens · messages, 이 3가지만 넣었습니다.")
 print("마지막 턴의 응답(r.raw)에는 그보다 훨씬 많은 게 같이 옵니다:\\n")
+print(f"  content                           : (길이 {len(r.raw.content)}인 리스트)")
+print(f"      답이 블록 하나가 아니라 **리스트**인 이유 — 도구를 쓰면 블록이 여러 개(생각 ·")
+print(f"      도구 호출 · 텍스트)로 늘어납니다. 지금은 글만 와서 블록이 하나뿐입니다.")
+print(f"  content[0].type                  : {block.type}")
+print(f"      이 블록이 글(text)인지 · 생각(thinking)인지 · 도구 호출(tool_use)인지")
+print(f"  content[0].text                  : {block.text[:40]!r}...")
+print(f"      우리가 r.text로 꺼내 쓰는 바로 이 값 — content[0].text")
+print(f"  content[0].citations              : {block.citations}")
+print(f"      문서를 인용하며 답했을 때만 출처가 들어감 (지금은 없음)")
+print(f"  role                              : {r.raw.role}")
+print(f"      누가 말했는지 — 응답은 항상 'assistant'")
+print(f"  type                              : {r.raw.type}")
+print(f"      이 객체 자체가 무엇인지 — 'message'")
+print(f"  container                         : {r.raw.container}")
+print(f"      코드 실행 도구를 쓸 때만 생기는 실행 환경 정보 (안 쓰면 None)")
+print(f"  diagnostics                       : {r.raw.diagnostics}")
+print(f"      캐시 진단(베타 기능)을 켰을 때만 옴 (안 켜면 None)")
+print(f"  stop_details                      : {r.raw.stop_details}")
+print(f"      거절(refusal)당했을 때만 이유가 들어감 (지금처럼 정상 답이면 None)")
 print(f"  id                                : {r.raw.id}")
 print(f"      내가 보낸 적 없음 — 이 응답 하나를 가리키는 고유 번호")
 print(f"  stop_reason                       : {r.raw.stop_reason}")
@@ -152,7 +175,7 @@ print(f"  usage.service_tier                : {u.service_tier}")
 print(f"      이번 요청이 처리된 등급")
 print(f"  usage.inference_geo               : {u.inference_geo}")
 print(f"      추론이 실제로 일어난 지역")'''),
-    M("""요청 쪼은 3가지뿐인데, 응답 쪼은 이렇게 **9가지가 넘는 부가 정보**가 따라옵니다. `r.text`만 보면 이 중 거의 전부를 놓치는 겁니다 — `llm.py`의 `Result`는 당장 쓸모 있는 몇 개(`text`·`stop_reason`·토큰 수)만 추려 둔 것뿐이고, 나머지는 `r.raw`를 직접 열어야 보입니다."""),
+    M("""요청 쪽은 3가지뿐인데, 응답 쪽은 이렇게 **15가지가 넘는 부가 정보**가 따라옵니다. `content`조차 글 하나가 아니라 **블록 리스트**이고, 우리가 늘 쓰는 `r.text`는 사실 그 리스트의 첫 블록(`content[0]`)의 `.text`일 뿐입니다. `r.text`만 보면 이 중 거의 전부를 놓치는 겁니다 — `llm.py`의 `Result`는 당장 쓸모 있는 몇 개(`text`·`stop_reason`·토큰 수)만 추려 둔 것뿐이고, 나머지는 `r.raw`를 직접 열어야 보입니다."""),
     M("""## 5. 같은 질문 다섯 번
 같은 질문을 두 가지로 각각 5회 보내고 결과를 나란히 놓습니다.
 
