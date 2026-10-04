@@ -104,20 +104,30 @@ for system in [
     r = llm.call(question, system=system, max_tokens=200)
     print(f"[system] {system}\\n{r.text.strip()}\\n")'''),
     M("""## 4. 모델은 기억하지 않는다
-API는 매 호출이 처음입니다. 이어서 대화하려면 **앞서 주고받은 메시지를 직접 다시 보냅니다.**"""),
-    C('''r1 = llm.call("제 이름은 김민수이고, 생산관리팀에서 일합니다.", max_tokens=100)
-print("1:", r1.text.strip())
+API는 매 호출이 처음입니다. 이어서 대화하려면 **앞서 주고받은 메시지를 직접 다시 보냅니다** — 그래서 턴이 늘어날수록 **매번 보내는 요청 자체가 커집니다.**
 
-r2 = llm.call("제 이름과 부서가 뭐였죠?", max_tokens=100)      # 이력 없이
-print("2 (이력 없음):", r2.text.strip())
+아래 셀은 2턴짜리 대화를 돌리면서, **매 턴마다 실제로 나가는 요청 전체와 돌아오는 응답 전체**를 빠짐없이 찍습니다."""),
+    C('''import json
 
-history = [
-    {"role": "user", "content": "제 이름은 김민수이고, 생산관리팀에서 일합니다."},
-    {"role": "assistant", "content": r1.text},
+history = []
+turns = [
+    "제 이름은 김민수이고, 생산관리팀에서 일합니다.",
+    "제 이름과 부서가 뭐였죠?",
 ]
-r3 = llm.call("제 이름과 부서가 뭐였죠?", history=history, max_tokens=100)
-print("3 (이력 있음):", r3.text.strip())
-print("\\n이력을 보낸 호출의 입력 토큰:", r3.input_tokens, "— 대화가 길어질수록 매번 더 냅니다")'''),
+for i, user_text in enumerate(turns, 1):
+    messages = history + [{"role": "user", "content": user_text}]
+    print(f"===== {i}번째 턴 =====")
+    print("--- 나가는 요청 (messages 전체) ---")
+    print(json.dumps(messages, ensure_ascii=False, indent=2))
+
+    r = llm.call(user_text, history=history, max_tokens=100)
+
+    print("\\n--- 돌아온 응답 전체 ---")
+    print(r.raw)
+    print()
+
+    history = messages + [{"role": "assistant", "content": r.text}]'''),
+    M("""**1턴**은 `messages`에 내가 보낸 말 하나뿐이지만, **2턴**은 1턴의 내 말 + 모델의 답 + 이번 내 말, **세 개**가 들어갑니다. 이력 없이 "제 이름과 부서가 뭐였죠?"만 물으면 모델은 모릅니다 — 매번 **지금까지 오간 것 전부**를 다시 보내야 기억하는 것처럼 보입니다. 위 출력에서 두 응답의 `usage.input_tokens`를 직접 비교해 보세요 — 2턴째가 더 큽니다. 대화가 길어질수록 매번 더 커집니다."""),
     M("""## 5. 같은 질문 다섯 번
 같은 질문을 두 가지로 각각 5회 보내고 결과를 나란히 놓습니다.
 
