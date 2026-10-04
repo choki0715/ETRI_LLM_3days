@@ -19,7 +19,7 @@ MODEL = os.getenv("MODEL", "claude-haiku-4-5-20251001")
 MODEL_ADVANCED = os.getenv("MODEL_ADVANCED", "claude-sonnet-5-5")
 MOCK = os.getenv("LLM_MOCK", "0") == "1"
 
-# 모델 비교(바퀴 3)에 쓸 목록 — 강의 당일 쓸 수 있는 이름으로 확인해 바꿉니다
+# grade.py --all-models 로 비교할 때 쓰는 목록 — 강의 당일 쓸 수 있는 이름으로 확인해 바꿉니다
 MODELS = ["claude-haiku-4-5-20251001", "claude-sonnet-5-5", "claude-opus-5-5"]
 
 # 100만 토큰당 (입력 $, 출력 $) — Claude API 기준가. 강의 당일 요금표로 다시 확인합니다.

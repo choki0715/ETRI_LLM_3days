@@ -6,7 +6,7 @@
     python -m src.grade prompts/prompt_4.txt
     python -m src.grade prompts/prompt_4.txt prompts/prompt_5.txt        # 나란히 비교
     python -m src.grade solutions/prompts/prompt_6.txt --model claude-haiku-4-5-20251001
-    python -m src.grade prompts/prompt_6.txt --all-models                 # 3차
+    python -m src.grade prompts/prompt_6.txt --all-models                 # 모델 셋으로 비교
 
 프롬프트 파일 규칙
 - 파일 안의 {document} 자리에 문의 내용이 들어간다.
@@ -253,7 +253,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description="프롬프트를 고정 20문항으로 채점한다")
     ap.add_argument("prompts", nargs="+", help="프롬프트 파일 (여러 개면 나란히 비교)")
     ap.add_argument("--model", default=None, help=f"기본값 {llm.MODEL}")
-    ap.add_argument("--all-models", action="store_true", help="llm.MODELS 전부로 돌린다 (3차)")
+    ap.add_argument("--all-models", action="store_true", help="llm.MODELS 전부로 돌린다")
     ap.add_argument("--tests", default=str(TESTS))
     ap.add_argument("--only", default=None, help="일부 문항만: 예) 1,3,16-18")
     ap.add_argument("--workers", type=int, default=4)
