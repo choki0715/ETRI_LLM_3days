@@ -116,9 +116,10 @@ turns = [
 ]
 for i, user_text in enumerate(turns, 1):
     messages = history + [{"role": "user", "content": user_text}]
+    request = {"model": llm.MODEL, "max_tokens": 100, "messages": messages}
     print(f"===== {i}번째 턴 =====")
-    print("--- 나가는 요청 (messages 전체) ---")
-    print(json.dumps(messages, ensure_ascii=False, indent=2))
+    print("--- 나가는 요청 전체 ---")
+    print(json.dumps(request, ensure_ascii=False, indent=2))
 
     r = llm.call(user_text, history=history, max_tokens=100)
 
