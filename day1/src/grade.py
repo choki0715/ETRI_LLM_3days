@@ -156,7 +156,7 @@ def check(text: str, spec: dict) -> tuple[bool, str | None, str]:
 def _one(prompt, t, model):
     system, user = build(prompt, t["input"])
     try:
-        r = llm.call(user, system, model=model, max_tokens=500)
+        r = llm.call(user, system, model=model, max_tokens=1500)   # 사고(thinking)가 켜진 모델은 그 토큰도 여기 포함된다
     except Exception as e:                                    # 네트워크 · 키 오류도 기록
         return dict(id=t["id"], group=t.get("group", ""), ok=False, kind="호출 실패",
                     why=f"{type(e).__name__}: {e}", text="", input_tokens=0, output_tokens=0,

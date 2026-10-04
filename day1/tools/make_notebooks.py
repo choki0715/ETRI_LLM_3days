@@ -666,13 +666,36 @@ print_fails(rows3)'''),
 같은 `prompt_6`, 같은 20문항 — **모델만** 바꿉니다. 모델 이름은 `common/llm.py`의 `MODELS`에서 강의 당일 쓸 수 있는 것으로 확인합니다.
 
 고르는 기준 — 통과 기준을 넘는 모델 중에서 가장 싸고 빠른 것. **가격은 통과 수를 본 다음에 봅니다.**"""),
-    C('''compare = []
+    C('''compare, fails_by_model = [], {}
 for m in llm.MODELS:
     pm, fm, rm = run(P6, model=m, detail=True)
     sm = summarize(rm, m)
     save(P6, m, rm, sm, note="3차 · 모델 비교")
     compare.append(("prompt_6", m, sm))
+    fails_by_model[m] = {r["id"]: r["why"] for r in rm if not r["ok"]}
 print_table(compare)'''),
+    M("""### 모델을 올려도 남는 실패는 어떤 것인가
+비싼 모델로 바꿔도 통과 수가 거의 안 움직인다면, 남은 실패는 모델 능력 문제가 아닐 가능성이 큽니다. 모델별로 **어느 문항**에서 틀렸는지 모아 보면 갈립니다."""),
+    C('''by_id = {}
+for m, f in fails_by_model.items():
+    for i, why in f.items():
+        by_id.setdefault(i, []).append((m.replace("claude-", ""), why))
+
+common = [i for i, lst in by_id.items() if len(lst) == len(llm.MODELS)]
+print("세 모델 모두 틀린 문항:", sorted(common) or "없음")
+print()
+for i in sorted(by_id):
+    t = next(t for t in tests if t["id"] == i)
+    print(f"#{i:>2} [{t[\'group\']}] {t[\'input\']}")
+    print(f"     정답 {t[\'check\'][\'category\']} · {t[\'check\'][\'urgency\']}")
+    for m, why in by_id[i]:
+        print(f"     {m:<22} {why}")
+    print()'''),
+    M("""읽는 법:
+- **세 모델이 같은 문항에서 틀린다** → 그 문항은 프롬프트 기준이 애매하거나 `tests.jsonl`의 정답이 이상한 것입니다. 모델을 바꿔 봐야 소용없고, 기준을 고쳐야 합니다.
+- **모델마다 다른 문항에서, 긴급도만 한 단계씩 어긋난다** → 긴급도 경계(낮음↔보통, 보통↔높음)가 `prompt_6`의 기준에도 정답에도 느슨하게 남아 있다는 뜻입니다. 사람도 "에어컨 소리는 보통인가 낮음인가"에서 갈립니다. 이런 문항은 기준을 더 구체적으로 적거나, 경계 사례로 인정하고 넘어갑니다.
+- 표에서 Opus·Sonnet의 **평균 초와 1건 비용이 몇 배 큰 것**도 보세요. 최신 모델은 답하기 전에 생각(thinking)을 하고 그 토큰도 과금됩니다 — 그런데 통과 수는 Haiku와 같습니다. 이 과제에선 그 비용이 아무것도 사 주지 않은 겁니다.
+- **어느 쪽이든 결론은 같습니다** — 모델 교체는 **마지막** 수단입니다. 기준(프롬프트·정답)으로 풀 수 있는 실패를 비싼 모델로 덮으려 하면 돈만 들고 그대로 남습니다. 그래서 3차에서 고르는 기준이 "통과 기준을 넘는 것 중 **가장 싸고 빠른 것**"인 겁니다."""),
     M("""## 6. 결과표
 `results/scoreboard.csv`에 실행할 때마다 한 줄씩 쌓입니다. 엑셀로 열어도 됩니다. "바꾼 것" 칸에 NOTE가 들어가므로, 나중에 봐도 **어느 줄이 어떤 수정의 결과인지** 알 수 있습니다."""),
     C('''import csv
