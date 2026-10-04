@@ -345,7 +345,7 @@ nb02 = [
     C(SETUP + '''
 import json, re
 from pathlib import Path
-from src.grade import build, parse, schema_errors'''),
+from src.grade import build, parse, schema_errors, CATEGORIES, URGENCY'''),
     M("## 1. 문의 고르기"),
     C('''doc = "탕비실 정수기가 고장나서 물이 안 나옵니다. 교체 부탁드립니다."   # ✏️ 내 업무 문의로 바꿔도 됩니다
 print(doc)'''),
@@ -359,17 +359,22 @@ print(doc)'''),
     if show:
         print(f"=== system에 들어간 것 ===\\n{system}\\n")
         print(f"=== user에 들어간 것 ===\\n{user}\\n")
-    ok, vals = 0, []
+    c1 = c2 = c3 = ok = 0            # ①파싱  ②보기 안  ③요약 있음  통과=셋 다
+    vals = []
     for i in range(n):
         r = llm.call(user, system=system, max_tokens=500)
         try:
-            out = parse(r.text)                                   # ①
-            errs = schema_errors(out)                             # ② ③
-            if errs:
-                note = "JSON은 읽힘 · 보기 밖 — " + errs[0]
-            else:
+            out = parse(r.text)                                                       # ①
+            c1 += 1
+            in_range = out.get("카테고리") in CATEGORIES and out.get("긴급도") in URGENCY   # ②
+            has_sum  = isinstance(out.get("요약"), str) and out["요약"].strip() != ""    # ③
+            c2 += in_range; c3 += has_sum
+            if in_range and has_sum:
                 ok += 1
                 note = f"통과 · 카테고리={out['카테고리']} · 긴급도={out['긴급도']}"
+            else:
+                why = "보기 밖" if not in_range else "요약 없음"
+                note = f"JSON은 읽힘 · {why} — 카테고리={out.get('카테고리')!r} 긴급도={out.get('긴급도')!r}"
             vals.append((out.get("카테고리"), out.get("긴급도")))
         except ValueError as e:
             note = f"JSON 실패 — {e}"
@@ -377,7 +382,7 @@ print(doc)'''),
         if show:
             print(f"--- {i+1}회 · {note} · 출력 {r.output_tokens} 토큰")
             print(r.text.strip()[:600])
-    print(f"\\n통과 {ok} / {n}   (①JSON ②보기 안 ③요약 있음 — 셋 다 만족한 횟수)")
+    print(f"\\n①JSON {c1}/{n}   ②보기 안 {c2}/{n}   ③요약 있음 {c3}/{n}   →   통과 {ok}/{n} (셋 다 만족)")
     return ok, vals
 
 v0 = llm.load_prompt("prompts/prompt_v0.txt")
