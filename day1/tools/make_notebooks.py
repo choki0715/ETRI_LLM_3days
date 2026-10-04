@@ -668,8 +668,7 @@ with open("results/scoreboard.csv", encoding="utf-8-sig") as f:
     for row in list(csv.reader(f))[-8:]:
         print(" | ".join(row[:11]))'''),
     M("""## 내일 가지고 올 것
-- `prompt_6.txt` · `tests.jsonl` · `grade.py` · 결과표(`results/scoreboard.csv`)
-- 생각해 올 것 — 오늘 남은 실패 중, **"모델이 몰라서"** 틀린 것은 무엇인가 (→ Day 2 컨텍스트)"""),
+- `prompt_6.txt` · `tests.jsonl` · `grade.py` · 결과표(`results/scoreboard.csv`)"""),
 ]
 
 if __name__ == "__main__":
