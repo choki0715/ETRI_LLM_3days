@@ -480,7 +480,7 @@ print(final)'''),
 
 ### 최종 프롬프트 확인
 아래 셀은 `prompts/prompt_4.txt`를 **파일에서 다시 읽어** 빈 자리나 `TODO`가 남지 않았는지 확인하고 한 번 돌립니다. 위 단계의 ✏️ 문장을 고쳤다면 그 셀을 다시 실행한 뒤 이 셀을 실행합니다."""),
-    C('''FINAL_PATH = "prompts/prompt_4.txt"      # ✏️ 풀이본과 비교하려면 "solutions/prompts/prompt_v1.txt"
+    C('''FINAL_PATH = "prompts/prompt_4.txt"      # ✏️ 풀이본과 비교하려면 "solutions/prompts/prompt_4.txt"
 v1 = llm.load_prompt(FINAL_PATH)
 
 empty = [t for t in ["역할", "할 일", "출력 형식", "예시"] if re.search(rf"<{t}>\\s*</{t}>", v1)]
@@ -534,14 +534,17 @@ nb03 = [
 
 고쳤다는 느낌은 증거가 아닙니다. **같은 문항, 같은 기준, 같은 방법으로** 다시 재야 고친 것입니다.
 
+02에서 만든 최종 프롬프트 **`prompt_4`**를 정답이 있는 20문항에 돌려 점수를 내고(1차), 가장 많이 틀리는 유형 하나를 고쳐 **`prompt_5`**로 저장해 다시 재고(2차), 한 번 더 고쳐 **`prompt_6`**(2차 반복), 마지막으로 같은 `prompt_6`를 모델만 바꿔 잽니다(3차). 번호는 02에서 이어집니다.
+
 | 순서 | 할 일 | 시간 |
 |---|---|---|
-| 1 | 20문항 — 구성표대로 만들고 통과 조건을 적는다 | 15분 |
-| 2 | v1 채점 — 통과 수와 실패 유형을 결과표에 | 10분 |
-| 3 | v2 · v3 — 한 유형씩 고치고 다시 채점 | 15분 |
-| 4 | 모델 비교 — v3를 모델 셋에 돌린다 | 10분 |"""),
+| 1 | 20문항 — 구성표와 통과 조건을 읽는다 | 10분 |
+| 2 | 1차 — `prompt_4` 채점, 실패 문항을 직접 연다 | 10분 |
+| 3 | 2차 — 한 유형씩 고쳐 `prompt_5` · `prompt_6`, 같은 20문항으로 다시 채점 | 20분 |
+| 4 | 3차 — `prompt_6`를 모델 셋에 돌린다 | 10분 |"""),
     C(SETUP + '''
 import json
+from pathlib import Path
 from collections import Counter
 from src.grade import load_tests, run, check, summarize, save, print_table, print_fails'''),
     M("""## 1. 고정 테스트 20문항
@@ -556,12 +559,14 @@ from src.grade import load_tests, run, check, summarize, save, print_table, prin
 | 어느 카테고리에도 안 맞는 입력 | 3 | 16 · 17 · 18 | 억지로 짜맞추지 않고 "기타"로 분류하는지 |
 | 실제로 틀렸던 입력 | 2 | 19 "노트북"이라는 단어 · 20 영문 혼용 | 아래 설명 |
 
-**"실제로 틀렸던 입력"이 뭔지:** 앞의 세 종류는 미리 설계해 둔 문제지만, 이 둘은 **"내 v1을 돌려봤더니 실제로 틀렸던 문의"**를 넣는 자리입니다. 지금은 강사가 미리 겪은 흔한 실패 예시가 채워져 있을 뿐입니다.
+**"실제로 틀렸던 입력"이 뭔지:** 앞의 세 종류는 미리 설계해 둔 문제지만, 이 둘은 **"내 프롬프트를 돌려봤더니 실제로 틀렸던 문의"**를 넣는 자리입니다. 지금은 강사가 미리 겪은 흔한 실패 예시가 채워져 있을 뿐입니다.
 
 **내 것으로 바꾸는 법:**
-1. 02 노트북에서 v1이 실제로 틀렸던 문의를 적어둔다
+1. 02의 4절(근거)이나 아래 1차 채점에서 `prompt_4`가 실제로 틀린 문의를 적어둔다
 2. `tests.jsonl`의 19·20번 줄에서 `input`과 `check`를 그 문의에 맞게 고친다
 3. **그다음부터는 문항을 바꾸지 않는다** — 고치는 동안 문항이 바뀌면 비교할 수 없다
+
+여기 적힌 **정답(`check`)은 설계자가 정한 판단 기준**이지 객관적 사실이 아닙니다(02의 4절). 모델이 다르게 답했을 때 프롬프트를 고칠지 정답을 고칠지는 근거를 보고 사람이 정합니다.
 
 | check 필드 | 뜻 |
 |---|---|
@@ -573,8 +578,8 @@ print(Counter(t["group"] for t in tests))
 for t in tests[:3] + tests[15:18]:
     print(t["id"], t["group"], t["input"][:30], t["check"])'''),
     M("""## 2. check — 판정 규칙
-`check(출력, 통과 조건)` → `(통과 여부, 실패 유형, 설명)`. 가짜 출력으로 먼저 확인합니다.
-판정 순서: **형식 위반 → 지어냄 → 지시 일부 누락 → 사실 오류**"""),
+`check(출력, 통과 조건)` → `(통과 여부, 실패 유형, 설명)`. 모델 없이 **가짜 출력**으로 먼저 돌려, 판정기가 네 유형을 어떻게 가르는지 봅니다.
+판정 순서: **형식 위반 → 지어냄 → 지시 일부 누락 → 사실 오류** — 앞에서 걸리면 거기서 멈춥니다."""),
     C('''spec = tests[0]["check"]                 # {"category": "IT", "urgency": "보통", "has": "비밀번호"}
 samples = {
     "정상":          \'{"카테고리": "IT", "긴급도": "보통", "요약": "비밀번호 재설정 요청"}\',
@@ -588,13 +593,16 @@ for name, text in samples.items():
 
 spec16 = tests[15]["check"]              # 정답이 "기타"인 문항
 print("지어냄     ", check(\'{"카테고리": "인사", "긴급도": "낮음", "요약": "워크숍 일정 문의"}\', spec16))'''),
-    M("""## 3. 1차 · v1 채점
-**02 노트북에서 만든 최종 프롬프트 `prompts/prompt_4.txt`**를 20문항에 돌립니다. 이게 1차(v1)입니다. 02를 아직 안 돌려 파일이 없으면 아래 경로를 풀이본으로 바꿔 흐름을 먼저 봅니다."""),
-    C('''V1 = "prompts/prompt_4.txt"           # ✏️ 02를 안 돌렸으면 "solutions/prompts/prompt_v1.txt"
+    M("""## 3. 1차 · `prompt_4` 채점
+02에서 만든 최종 프롬프트 `prompts/prompt_4.txt`를 20문항에 돌립니다. 02를 아직 안 돌려 파일이 없으면 아래 셀이 **풀이본으로 대신 돌리고 그렇다고 알려 줍니다** — 흐름을 먼저 보고, 02를 돌린 뒤 다시 오면 됩니다."""),
+    C('''P4 = Path("prompts/prompt_4.txt")
+if not P4.exists():
+    print("※ prompts/prompt_4.txt 가 없습니다 (02 노트북을 아직 안 돌림). 풀이본 solutions/prompts/prompt_4.txt 로 대신 돌립니다.\\n")
+    P4 = Path("solutions/prompts/prompt_4.txt")
 
-passed, fails, rows = run(V1, detail=True)
+passed, fails, rows = run(str(P4), detail=True)
 s1 = summarize(rows, llm.MODEL)
-save(V1, llm.MODEL, rows, s1, note="v1")
+save(str(P4), llm.MODEL, rows, s1, note="1차 · prompt_4")
 print(f"통과 {passed} / {len(rows)}")
 print(Counter(kind for _, kind in fails))
 print_fails(rows)'''),
@@ -603,12 +611,12 @@ print_fails(rows)'''),
 (사실 오류는 코드가 카테고리·긴급도 문자열만 비교해 판정합니다 — 애매한 경우엔 사람이 다시 봅니다.)"""),
     C('''FAIL_ID = fails[0][0] if fails else 1      # ✏️ 보고 싶은 문항 번호
 row = next(r for r in rows if r["id"] == FAIL_ID)
-print(f"#{row['id']} [{row['group']}] {row['kind']} — {row['why']}\\n")
+print(f"#{row[\'id\']} [{row[\'group\']}] {row[\'kind\']} — {row[\'why\']}\\n")
 print(row["text"][:1200])'''),
-    M("""## 4. 2차 · 한 유형씩 고친다
-1. 가장 많은 실패 유형 **하나**를 고른다
-2. 그 유형에 맞는 걸 고쳐서 `prompts/prompt_v2.txt`로 저장한다
-3. 같은 20문항으로 v1과 v2를 비교한다
+    M("""## 4. 2차 · 한 유형씩 고쳐 `prompt_5`
+1. 위 실패 중 **가장 많은 유형 하나**를 고른다
+2. `prompt_4.txt`를 복사해 `prompts/prompt_5.txt`로 만들고, **그 유형에 맞는 것 하나만** 고친다 (아래 표)
+3. 같은 20문항으로 `prompt_4`와 `prompt_5`를 나란히 비교한다 — 통과 수만이 아니라 **어느 문항이 새로 통과하고 어느 문항이 새로 실패했는지**
 4. 나빠졌으면 되돌린다
 
 | 유형 | 고치는 곳 |
@@ -616,50 +624,52 @@ print(row["text"][:1200])'''),
 | 형식 위반 | 출력 형식 지시 · 예시 · `<json>` 태그로 감싸게 하기 |
 | 지시 일부 누락 | 요약에 꼭 들어가야 할 말을 지시에 명시 |
 | 지어냄 | "기타" 기준을 분명히 — 뚜렷이 안 맞으면 억지로 짜맞추지 말라고 지시 |
-| 사실 오류 | 카테고리 · 긴급도 판단 기준을 더 구체적으로 — **Day 2에서 더 다룬다** |"""),
-    C('''V2 = "solutions/prompts/prompt_v2.txt"   # ✏️ 내 v2: "prompts/prompt_v2.txt"
-NOTE = "긴급도: 말투가 아니라 정해진 기준으로"      # ✏️ 무엇을 바꿨는지 한 줄
+| 사실 오류 | 카테고리 · 긴급도 판단 기준을 더 구체적으로 — 02의 4절에서 본 **근거**가 어디를 고칠지 알려 준다 |
 
-p2, f2, rows2 = run(V2, detail=True)
+아래 셀은 기본값으로 **풀이본 `prompt_5`**(긴급도를 말투가 아니라 정해진 기준으로 판단하게 함)를 돌립니다. 내 `prompt_5`를 만들었으면 경로와 NOTE를 바꾸세요."""),
+    C('''P5 = "solutions/prompts/prompt_5.txt"      # ✏️ 내 것: "prompts/prompt_5.txt"
+NOTE = "긴급도: 말투가 아니라 정해진 기준으로"   # ✏️ 무엇을 바꿨는지 한 줄 — 결과표에 남는다
+
+p2, f2, rows2 = run(P5, detail=True)
 s2 = summarize(rows2, llm.MODEL)
-save(V2, llm.MODEL, rows2, s2, note=NOTE)
-print_table([("v1", llm.MODEL, s1), ("v2", llm.MODEL, s2)])
+save(P5, llm.MODEL, rows2, s2, note=NOTE)
+print_table([("prompt_4", llm.MODEL, s1), ("prompt_5", llm.MODEL, s2)])
 
-before = {r["id"] for r in rows if r["ok"]}
-after = {r["id"] for r in rows2 if r["ok"]}
-print("\\n새로 통과:", sorted(after - before), " 새로 실패:", sorted(before - after))'''),
-    M("""### 2차 · 한 번 더 → v3
-v2의 실패 중 가장 많은 유형 하나를 골라 v3를 만듭니다. 풀이본 v3는 **카테고리 판단 기준(구매 요청 vs 고장 신고)**을 더 분명히 했습니다."""),
-    C('''V3 = "solutions/prompts/prompt_v3.txt"   # ✏️ 내 v3: "prompts/prompt_v3.txt"
+before = {r["id"] for r in rows  if r["ok"]}
+after  = {r["id"] for r in rows2 if r["ok"]}
+print("\\n새로 통과:", sorted(after - before), "  새로 실패:", sorted(before - after))'''),
+    M("""### 2차를 한 번 더 → `prompt_6`
+`prompt_5`의 실패 중 가장 많은 유형 하나를 골라 `prompt_6`을 만듭니다. 풀이본 `prompt_6`은 **카테고리 판단 기준(전자기기라도 구매 요청이면 비품, 고장 신고만 IT)**을 더 분명히 했습니다 — 02의 4절에서 모니터 건이 "IT 장비라서"라는 근거로 틀렸던 바로 그 지점입니다."""),
+    C('''P6 = "solutions/prompts/prompt_6.txt"      # ✏️ 내 것: "prompts/prompt_6.txt"
 NOTE = "카테고리: 구매 요청과 고장 신고를 구분하는 기준 추가"
 
-p3, f3, rows3 = run(V3, detail=True)
+p3, f3, rows3 = run(P6, detail=True)
 s3 = summarize(rows3, llm.MODEL)
-save(V3, llm.MODEL, rows3, s3, note=NOTE)
-print_table([("v1", llm.MODEL, s1), ("v2", llm.MODEL, s2), ("v3", llm.MODEL, s3)])
+save(P6, llm.MODEL, rows3, s3, note=NOTE)
+print_table([("prompt_4", llm.MODEL, s1), ("prompt_5", llm.MODEL, s2), ("prompt_6", llm.MODEL, s3)])
 print_fails(rows3)'''),
     M("""**발표 — 한 문장으로**
 > "___ 유형을 줄이려고 ___를 바꿨더니 통과가 __ → __ 가 됐고, 대신 ___ 가 생겼다(또는 생기지 않았다)."
 """),
     M("""## 5. 3차 · 모델을 바꿔 잰다
-같은 v3, 같은 20문항 — **모델만** 바꿉니다. 모델 이름은 `common/llm.py`의 `MODELS`에서 강의 당일 쓸 수 있는 것으로 확인합니다.
+같은 `prompt_6`, 같은 20문항 — **모델만** 바꿉니다. 모델 이름은 `common/llm.py`의 `MODELS`에서 강의 당일 쓸 수 있는 것으로 확인합니다.
 
 고르는 기준 — 통과 기준을 넘는 모델 중에서 가장 싸고 빠른 것. **가격은 통과 수를 본 다음에 봅니다.**"""),
     C('''compare = []
 for m in llm.MODELS:
-    pm, fm, rm = run(V3, model=m, detail=True)
+    pm, fm, rm = run(P6, model=m, detail=True)
     sm = summarize(rm, m)
-    save(V3, m, rm, sm, note="모델 비교")
-    compare.append(("v3", m, sm))
+    save(P6, m, rm, sm, note="3차 · 모델 비교")
+    compare.append(("prompt_6", m, sm))
 print_table(compare)'''),
     M("""## 6. 결과표
-`results/scoreboard.csv`에 실행할 때마다 한 줄씩 쌓입니다. 엑셀로 열어도 됩니다."""),
+`results/scoreboard.csv`에 실행할 때마다 한 줄씩 쌓입니다. 엑셀로 열어도 됩니다. "바꾼 것" 칸에 NOTE가 들어가므로, 나중에 봐도 **어느 줄이 어떤 수정의 결과인지** 알 수 있습니다."""),
     C('''import csv
 with open("results/scoreboard.csv", encoding="utf-8-sig") as f:
     for row in list(csv.reader(f))[-8:]:
         print(" | ".join(row[:11]))'''),
     M("""## 내일 가지고 올 것
-- `prompt_v3.txt` · `tests.jsonl` · `grade.py` · 결과표(`results/scoreboard.csv`)
+- `prompt_6.txt` · `tests.jsonl` · `grade.py` · 결과표(`results/scoreboard.csv`)
 - 생각해 올 것 — 오늘 남은 실패 중, **"모델이 몰라서"** 틀린 것은 무엇인가 (→ Day 2 컨텍스트)"""),
 ]
 

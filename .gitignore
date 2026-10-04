@@ -12,4 +12,4 @@ day2/db/
 .DS_Store
 
 # 02 노트북이 단계별로 생성하는 프롬프트 (학생 산출물)
-day1/prompts/prompt_[1-4].txt
+day1/prompts/prompt_[1-6].txt

@@ -69,9 +69,9 @@ def test_tests_file():
         assert t["input"].strip()
 
 def test_prompt_files_build():
-    for p in ["prompts/prompt_v0.txt", "solutions/prompts/prompt_v1.txt",
-              "solutions/prompts/prompt_v2.txt", "solutions/prompts/prompt_v3.txt"]:
+    for p in ["prompts/prompt_v0.txt", "solutions/prompts/prompt_4.txt",
+              "solutions/prompts/prompt_5.txt", "solutions/prompts/prompt_6.txt"]:
         system, user = build(llm.load_prompt(p), "DOC_BODY")
         assert "DOC_BODY" in user and "{document}" not in user
-    s, u = split_prompt(llm.load_prompt("solutions/prompts/prompt_v3.txt"))
+    s, u = split_prompt(llm.load_prompt("solutions/prompts/prompt_6.txt"))
     assert s and "<할 일>" in s and "<문의>" in u

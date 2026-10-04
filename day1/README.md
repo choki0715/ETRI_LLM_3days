@@ -2,7 +2,7 @@
 
 LLM 기본 & 바이브 코딩 3일 과정 — Day 1 슬라이드(`LLM_basic_Day1.pptx`)와 짝을 이루는 실습 코드입니다.
 
-하루 동안 **프롬프트 하나**를 만들고(v0 → v1), **고정 20문항**으로 채점하고, 실패 유형을 하나씩 고쳐(v2 → v3), 마지막에 모델을 바꿔 잽니다. 과제는 **사내 문의 메시지를 카테고리·긴급도·요약으로 분류하는 것**입니다.
+하루 동안 **프롬프트 하나**를 요소를 더해 가며 만들고(v0 → prompt_1~4), **고정 20문항**으로 채점하고, 실패 유형을 하나씩 고쳐(prompt_5 → 6), 마지막에 모델을 바꿔 잽니다. 과제는 **사내 문의 메시지를 카테고리·긴급도·요약으로 분류하는 것**입니다.
 
 ## 1. 준비 (10분)
 
@@ -28,7 +28,7 @@ jupyter lab                        # notebooks/ 를 연다
 | 09:00–10:30 | 1 LLM이 글을 쓰는 법 | (실습 노트북 없음 — 슬라이드 · 채팅 화면) | — |
 | 10:40–11:40 | 2 API와 메시지 | 25분 · 첫 호출 · 응답 읽기 · 기억하지 않음 · 다섯 번 · 비용 | `notebooks/01_api_basics.ipynb` |
 | 11:50–15:00 | 3 프롬프트 설계 | 60분 · v0 → prompt_1~4 (요소를 하나씩 더하며) · 근거 활용 | `notebooks/02_prompt_design.ipynb` · `prompts/` |
-| 15:10–16:40 | 4 평가 | 50분 · 20문항 · v1 채점 · v2 · v3 · 모델 비교 | `notebooks/03_evaluation.ipynb` · `src/grade.py` |
+| 15:10–16:40 | 4 평가 | 50분 · 20문항 · prompt_4 채점 · 5 · 6 · 모델 비교 | `notebooks/03_evaluation.ipynb` · `src/grade.py` |
 
 ## 3. 폴더
 
@@ -38,8 +38,8 @@ day1/
 │  └─ grade.py          parse() · check() · run() — 채점 코드 (블록 4)
 ├─ prompts/             수강생 프롬프트
 │  ├─ prompt_v0.txt     한 줄짜리 지시 (출발점)
-│  └─ prompt_1~4.txt    02 노트북이 요소를 하나씩 더하며 생성 — prompt_4 가 최종(v1)
-├─ solutions/prompts/   강사 풀이본 v1 · v2 · v3
+│  └─ prompt_1~6.txt    02가 요소를 하나씩 더하며 1~4 생성(4가 최종) · 03에서 한 유형씩 고쳐 5, 6
+├─ solutions/prompts/   강사 풀이본 prompt_4 · 5 · 6 (02 최종 · 03의 2차 · 03의 3차용)
 ├─ data/
 │  ├─ docs/             블록 2(비용 계산)에서만 쓰는 긴 문서 1편
 │  └─ tests.jsonl       고정 20문항(문의 본문 + 통과 조건)과 통과 조건
@@ -53,8 +53,8 @@ day1/
 
 ```bash
 python -m src.grade prompts/prompt_4.txt
-python -m src.grade prompts/prompt_4.txt prompts/prompt_v2.txt --note "긴급도 기준 추가"
-python -m src.grade solutions/prompts/prompt_v3.txt --all-models     # 3차
+python -m src.grade prompts/prompt_4.txt prompts/prompt_5.txt --note "긴급도 기준 추가"
+python -m src.grade solutions/prompts/prompt_6.txt --all-models      # 3차
 python -m src.grade prompts/prompt_4.txt --only 16-18                # 일부 문항만
 ```
 

@@ -4,9 +4,9 @@
 과제: 사내 문의 메시지 하나를 받아 카테고리·긴급도·요약으로 분류한다.
 
     python -m src.grade prompts/prompt_4.txt
-    python -m src.grade prompts/prompt_4.txt prompts/prompt_v2.txt       # 나란히 비교
-    python -m src.grade solutions/prompts/prompt_v3.txt --model claude-haiku-4-5-20251001
-    python -m src.grade prompts/prompt_v3.txt --all-models                # 3차
+    python -m src.grade prompts/prompt_4.txt prompts/prompt_5.txt        # 나란히 비교
+    python -m src.grade solutions/prompts/prompt_6.txt --model claude-haiku-4-5-20251001
+    python -m src.grade prompts/prompt_6.txt --all-models                 # 3차
 
 프롬프트 파일 규칙
 - 파일 안의 {document} 자리에 문의 내용이 들어간다.
