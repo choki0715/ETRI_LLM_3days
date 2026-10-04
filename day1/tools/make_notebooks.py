@@ -336,7 +336,7 @@ nb02 = [
 - 카테고리 — 비품 · 시설 · 인사 · IT · 기타 중 하나
 - 긴급도 — 높음 · 보통 · 낮음 중 하나
 
-**통과 기준** — 10번 돌려 10번 모두 JSON으로 읽히고 · 카테고리·긴급도가 위 보기 안에 있고 · 보기에 없는 카테고리를 지어내지 않음
+**통과 기준** — 10번 돌려 10번 모두 ① JSON으로 읽히고 ② 카테고리·긴급도가 위 보기 안에 있고 ③ 요약이 비어 있지 않음. 아래 `try_prompt()`가 이 세 가지를 그대로 세어 "통과 x / n"으로 보여줍니다.
 
 | 순서 | 할 일 | 시간 |
 |---|---|---|
@@ -346,14 +346,15 @@ nb02 = [
 | 4 | 짝 점검 체크리스트 | 15분 |"""),
     C(SETUP + '''
 import json
-from src.grade import build, parse'''),
+from src.grade import build, parse, schema_errors'''),
     M("## 1. 문의 고르기"),
     C('''doc = "탕비실 정수기가 고장나서 물이 안 나옵니다. 교체 부탁드립니다."   # ✏️ 내 업무 문의로 바꿔도 됩니다
 print(doc)'''),
     M("""## 2. v0 — 한 줄짜리 지시
 `prompts/prompt_v0.txt`를 그대로 돌립니다. 결과를 보고 **무엇이 부족한지** 적습니다."""),
     C('''def try_prompt(prompt_text, document, n=1, show=True):
-    """프롬프트를 n번 돌려 JSON 파싱 성공 횟수를 센다."""
+    """프롬프트를 n번 돌려, 도입부의 통과 기준 세 가지를 모두 만족한 횟수를 센다.
+    ① JSON으로 읽히는가  ② 카테고리·긴급도가 보기 안인가  ③ 요약이 비어 있지 않은가"""
     system, user = build(prompt_text, document)
     if show:
         print(f"=== system에 들어간 것 ===\\n{system}\\n")
@@ -362,23 +363,28 @@ print(doc)'''),
     for i in range(n):
         r = llm.call(user, system=system, max_tokens=500)
         try:
-            out = parse(r.text); ok += 1
-            note = f"JSON OK · 카테고리={out.get('카테고리')} · 긴급도={out.get('긴급도')}"
+            out = parse(r.text)                                   # ①
+            errs = schema_errors(out)                             # ② ③
+            if errs:
+                note = "JSON은 읽힘 · 보기 밖 — " + errs[0]
+            else:
+                ok += 1
+                note = f"통과 · 카테고리={out['카테고리']} · 긴급도={out['긴급도']}"
         except ValueError as e:
             note = f"JSON 실패 — {e}"
         if show:
             print(f"--- {i+1}회 · {note} · 출력 {r.output_tokens} 토큰")
             print(r.text.strip()[:600])
-    print(f"\\n파싱 성공 {ok} / {n}")
+    print(f"\\n통과 {ok} / {n}   (①JSON ②보기 안 ③요약 있음 — 셋 다 만족한 횟수)")
     return ok
 
 v0 = llm.load_prompt("prompts/prompt_v0.txt")
 print(v0, "\\n========")
 try_prompt(v0, doc)'''),
-    M("""**v0에서 부족했던 것** (한 줄씩):
--
--
-- """),
+    M("""**v0에서 부족했던 것** (한 줄씩). 위 출력에서 이 세 가지를 확인해 적습니다:
+- 형식 — `<json>` 태그 안에 들어 있나, 아니면 코드블록(```)이나 설명이 붙어 있나? →
+- 키 이름 — `카테고리`·`긴급도`·`요약` 세 개인가, 아니면 모델이 다른 이름을 지어냈나? →
+- 값 — 카테고리가 다섯 보기 중 하나인가, 긴급도가 세 보기 중 하나인가? → """),
     M("""## 3. v1 — 아래 표를 한 줄씩 채우고 바로 돌려본다
 `prompts/prompt_v1.txt`를 엽니다. 파일 안에 **`TODO:`로 시작하는 줄이 네 개** 있습니다. `TODO`는 "여기는 네가 써야 할 자리"라는 표시일 뿐이고, 할 일은 **그 줄을 통째로 지우고 그 자리에 내 문장을 쓰는 것**입니다. 다 채우면 파일에 `TODO`라는 글자가 하나도 남지 않아야 합니다 — 아래 셀이 그걸로 "아직 안 채웠다"를 판단합니다.
 
@@ -456,7 +462,7 @@ v1을 짝과 바꿔 보고, 아래 다섯 가지를 하나씩 확인합니다. �
 - [ ] **요약 있음** — 요약이 비어 있지 않은가?
 - [ ] **구조** — `=== system ===`에는 역할·규칙·형식만, `=== user ===`에는 문의만 들어가 있는가?
 
-아래 셀은 이 중 **첫 번째(형식)만 자동으로** 확인합니다. 나머지 네 개는 사람이 눈으로 봐야 합니다."""),
+아래 셀이 위 **네 개를 자동으로** 셉니다(`try_prompt`가 세는 통과 기준이 바로 이것). 다섯 번째(구조)만 파일을 열어 눈으로 봅니다."""),
     C('''ok = try_prompt(v1, doc, n=10, show=False)
 print("통과" if ok == 10 else "아직 — 형식 지시 · 예시를 다시 봅니다")'''),
     M("""## 5. 생각할 자리를 준다
@@ -603,8 +609,8 @@ for name, text in samples.items():
 spec16 = tests[15]["check"]              # 정답이 "기타"인 문항
 print("지어냄     ", check(\'{"카테고리": "인사", "긴급도": "낮음", "요약": "워크숍 일정 문의"}\', spec16))'''),
     M("""## 3. 1차 · v1 채점
-**여러분의 `prompts/prompt_v1.txt`**를 20문항에 돌립니다. 아직 비어 있다면 풀이본으로 바꿉니다."""),
-    C('''V1 = "prompts/prompt_v1.txt"          # ✏️ 비어 있으면 "solutions/prompts/prompt_v1.txt"
+**여러분의 `prompts/prompt_v1.txt`**를 20문항에 돌립니다. 아직 TODO 그대로라면 20문항 전부 "형식 위반"으로 나옵니다 — 그때는 아래 경로를 풀이본으로 바꿔 흐름을 먼저 봅니다."""),
+    C('''V1 = "prompts/prompt_v1.txt"          # ✏️ 아직 TODO 그대로면 "solutions/prompts/prompt_v1.txt"
 
 passed, fails, rows = run(V1, detail=True)
 s1 = summarize(rows, llm.MODEL)
