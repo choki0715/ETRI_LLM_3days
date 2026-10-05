@@ -120,7 +120,7 @@ LLM_MOCK=1 python -m src.grade prompts/prompt_4.txt     # Windows PowerShell: $e
 
 ## 7. temperature에 대해
 
-anthropic SDK 1.x에서는 `temperature` 인자가 빠졌습니다. API는 모델마다 달라서, 이전 세대(Haiku 4.5)는 아직 받지만 최신 모델(Sonnet 5.5 · Opus 5.5)은 거부합니다(400 오류). 01 노트북에서 **같은 질문을 다섯 번** 보내 흔들림을 직접 보고, Haiku로 온도 0과 1을 바꿔 가며 차이를 비교합니다. "0으로 두면 늘 같다"에 기대지 않고 **여러 번 돌려 재는 것**이 4세션의 출발점입니다.
+anthropic SDK 1.x에서는 `temperature` 인자가 빠졌습니다. API는 모델마다 달라서, 이전 세대(Haiku 4.5)는 아직 받지만 최신 모델(Sonnet 5.5 · Opus 5.5)은 거부합니다(400 오류). 01 노트북에서 **같은 질문을 다섯 번** 보내 흔들림을 직접 보고, Haiku로 온도 0과 1을 바꿔 가며 차이를 비교합니다. "0으로 두면 늘 같다"에 기대지 않고 **여러 번 돌려 측정하는 것**이 4세션의 출발점입니다.
 
 `llm.call(..., temperature=...)`은 `extra_body`로 보냅니다. 받는 모델(Haiku 4.5)에서만 씁니다 — Sonnet 5.5에 보내면 400 오류가 나는 것도 01 노트북에서 확인합니다. 생각의 양을 조절하는 `effort="low"`~`"max"`는 지원하는 모델에서만 씁니다.
 
