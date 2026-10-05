@@ -1,4 +1,4 @@
-# 실습 · MCP 서버 하나 붙이기 (블록 1 · 20분)
+# 실습 · MCP 서버 하나 붙이기 (1세션 · 20분)
 
 sf-harness의 `sf-signals`를 MCP 도구 하나로 감싼 **sf-plant** 서버를 Claude Code에 붙이고, 모델이 그 도구를 부르는지 봅니다.
 

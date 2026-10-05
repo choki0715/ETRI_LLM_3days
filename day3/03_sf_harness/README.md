@@ -1,4 +1,4 @@
-# 실습 · sf-harness (블록 3 · 110분)
+# 실습 · sf-harness (3세션 · 110분)
 
 Claude Code라는 하네스 위에 얹는 하네스 — **사실은 스크립트, 판단은 스킬, 되돌릴 수 없는 행동은 훅, 결정은 사람.**
 저장소: github.com/choki0715/sf-harness

@@ -1,4 +1,4 @@
-"""Day 2 블록 3 · 고르기 — 임베딩 · 청킹 · 색인 · 검색 · 주입 · 호출.
+"""Day 2 3세션 · 고르기 — 임베딩 · 청킹 · 색인 · 검색 · 주입 · 호출.
 
     from src import rag
     chunks = rag.chunk_folder("data/kb")

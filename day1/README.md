@@ -21,9 +21,9 @@ jupyter lab                        # notebooks/ 를 연다
 - `.env`의 `MODEL`과 `common/llm.py`의 `MODELS`(`--all-models` 비교용)는 **강의 당일 쓸 수 있는 모델 이름**으로 확인해 바꿉니다.
 - `common/llm.py`의 `PRICES`는 예시 값입니다. 강의 당일 요금표로 채웁니다. 비어 있으면 "단가 미입력"으로 나옵니다.
 
-## 2. 블록별 진행
+## 2. 세션별 진행
 
-| 시간 | 블록 | 실습 | 파일 |
+| 시간 | 세션 | 실습 | 파일 |
 |---|---|---|---|
 | 09:00–10:30 | 1 LLM이 글을 쓰는 법 | (실습 노트북 없음 — 슬라이드 · 채팅 화면) | — |
 | 10:40–11:40 | 2 API와 메시지 | 25분 · 첫 호출 · 응답 읽기 · 기억하지 않음 · 다섯 번 · 비용 | `notebooks/01_api_basics.ipynb` |
@@ -35,13 +35,13 @@ jupyter lab                        # notebooks/ 를 연다
 ```
 day1/
 ├─ src/
-│  └─ grade.py          parse() · check() · run() — 채점 코드 (블록 4)
+│  └─ grade.py          parse() · check() · run() — 채점 코드 (4세션)
 ├─ prompts/             수강생 프롬프트
 │  ├─ prompt_v0.txt     한 줄짜리 지시 (출발점)
 │  └─ prompt_1~6.txt    02가 요소를 하나씩 더하며 1~4 생성(4가 최종) · 03에서 한 유형씩 고쳐 5, 6
 ├─ solutions/prompts/   강사 풀이본 prompt_4 · 5 · 6 (02 최종 · 03의 2차 두 번)
 ├─ data/
-│  ├─ docs/             블록 2(비용 계산)에서만 쓰는 긴 문서 1편
+│  ├─ docs/             2세션(비용 계산)에서만 쓰는 긴 문서 1편
 │  └─ tests.jsonl       고정 20문항(문의 본문 + 통과 조건)과 통과 조건
 ├─ notebooks/           01 ~ 03
 ├─ results/             채점 결과 · scoreboard.csv (실행하면 생긴다)
@@ -102,7 +102,7 @@ python -m src.grade prompts/prompt_4.txt --only 16-18                # 일부 �
 
 ### "틀렸던 입력" 2문항을 내 것으로 바꾸기
 
-19 · 20번은 자리만 잡아 둔 문항입니다. 블록 3에서 **내 v1이 실제로 틀렸던 문의**로 바꿉니다.
+19 · 20번은 자리만 잡아 둔 문항입니다. 3세션에서 **내 v1이 실제로 틀렸던 문의**로 바꿉니다.
 
 1. v1이 틀렸던 문의 본문을 적어둔다
 2. `tests.jsonl`의 19 · 20번 줄에서 `input`과 `check`를 바꾼다
@@ -120,7 +120,7 @@ LLM_MOCK=1 python -m src.grade prompts/prompt_4.txt     # Windows PowerShell: $e
 
 ## 7. temperature에 대해
 
-anthropic SDK 1.x에서는 `temperature` 인자가 빠졌습니다. API는 모델마다 달라서, 이전 세대(Haiku 4.5)는 아직 받지만 최신 모델(Sonnet 5.5 · Opus 5.5)은 거부합니다(400 오류). 01 노트북에서 **같은 질문을 다섯 번** 보내 흔들림을 직접 보고, Haiku로 온도 0과 1을 바꿔 가며 차이를 비교합니다. "0으로 두면 늘 같다"에 기대지 않고 **여러 번 돌려 재는 것**이 블록 4의 출발점입니다.
+anthropic SDK 1.x에서는 `temperature` 인자가 빠졌습니다. API는 모델마다 달라서, 이전 세대(Haiku 4.5)는 아직 받지만 최신 모델(Sonnet 5.5 · Opus 5.5)은 거부합니다(400 오류). 01 노트북에서 **같은 질문을 다섯 번** 보내 흔들림을 직접 보고, Haiku로 온도 0과 1을 바꿔 가며 차이를 비교합니다. "0으로 두면 늘 같다"에 기대지 않고 **여러 번 돌려 재는 것**이 4세션의 출발점입니다.
 
 `llm.call(..., temperature=...)`은 `extra_body`로 보냅니다. 받는 모델(Haiku 4.5)에서만 씁니다 — Sonnet 5.5에 보내면 400 오류가 나는 것도 01 노트북에서 확인합니다. 생각의 양을 조절하는 `effort="low"`~`"max"`는 지원하는 모델에서만 씁니다.
 

@@ -1,4 +1,4 @@
-"""sf-plant MCP 서버 — sf-harness의 sf-signals를 MCP 도구 하나로 감싼다 (Day 3 블록 1 실습).
+"""sf-plant MCP 서버 — sf-harness의 sf-signals를 MCP 도구 하나로 감싼다 (Day 3 1세션 실습).
 
     pip install mcp
     claude mcp add --transport stdio sf-plant -- python3 /절대/경로/sf_mcp.py
