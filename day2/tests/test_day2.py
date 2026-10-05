@@ -35,7 +35,7 @@ def test_index_search():
     idx = rag.Index.build(chunks(), name="t1")
     hits = idx.search("연차 사용 절차", 3)
     assert len(hits) == 3 and hits[0].value <= hits[-1].value
-    assert any(h.source == "01_취업규칙.txt" for h in hits)
+    assert any(h.source == "01_일반업무규칙.txt" for h in hits)
     only = idx.search("기준", 2, where={"파일": "10_구매_절차.txt"})
     assert all(h.source == "10_구매_절차.txt" for h in only)
 
@@ -48,9 +48,9 @@ def test_prompt_shape():
     assert rag.cited("맞습니다 [1]. 그리고 [2][1].") == [1, 2]
 
 
-H = [rag.Hit("연차는 사용일 3일 전까지 신청", "01_취업규칙.txt", "제14조", 0.2),
+H = [rag.Hit("연차는 사용일 3일 전까지 신청", "01_일반업무규칙.txt", "제14조", 0.2),
      rag.Hit("숙박비 12만원", "02_출장비_지급규정.txt", "제3조", 0.4)]
-SPEC = {"expect": ["3일"], "source": "01_취업규칙.txt"}
+SPEC = {"expect": ["3일"], "source": "01_일반업무규칙.txt"}
 
 
 def test_check_qa_kinds():
@@ -58,7 +58,7 @@ def test_check_qa_kinds():
     assert qa.check_qa("3일 전까지입니다 [2].", H, SPEC)[1] == "출처 오류"
     assert qa.check_qa("자료에 없음", H, SPEC)[1] == "있는데 못 씀"
     assert qa.check_qa("3일 [1]", H[1:], SPEC)[1] == "검색·청킹"
-    assert qa.check_qa("3일 [1]", [rag.Hit("연차는 사용일", "01_취업규칙.txt", "x", 0.1)], SPEC)[1] == "검색·청킹"
+    assert qa.check_qa("3일 [1]", [rag.Hit("연차는 사용일", "01_일반업무규칙.txt", "x", 0.1)], SPEC)[1] == "검색·청킹"
     assert qa.check_qa("자료에 없음", H, {"refuse": True})[0]
     assert qa.check_qa("10%입니다", H, {"refuse": True})[1] == "지어냄"
 
