@@ -58,10 +58,10 @@ echo "== day1 =="
 echo
 echo "== day2 =="
 if [ "$SKIP_MODEL_DOWNLOAD" = "1" ]; then
-  info "임베딩 모델 다운로드 건너뜀 — 필요하면 .env 에 EMBED=hash"
+  info "임베딩 모델 다운로드 건너뜀"
 else
   (cd "$ROOT/day2" && "$PY" tools/download_model.py) \
-    && ok "임베딩 모델 다운로드" || bad "임베딩 모델 다운로드 실패" "인터넷이 막혔다면 .env 에 EMBED=hash"
+    && ok "임베딩 모델 다운로드" || bad "임베딩 모델 다운로드 실패" "인터넷 연결을 확인하고 다시 실행"
 fi
 (cd "$ROOT/day2" && EMBED=hash "$PY" -m pytest tests -q) >/tmp/day2_test.log 2>&1 \
   && ok "pytest 통과" || bad "pytest 실패" "cat /tmp/day2_test.log"

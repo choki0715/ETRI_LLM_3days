@@ -16,7 +16,6 @@ EMBED=hash python -m pytest tests -q   # 8 passed
 ```
 
 - Python 3.10 이상. CPU만으로 돌아갑니다(GPU 필요 없음).
-- **강의장 인터넷이 Hugging Face를 막는다면** `.env`에 `EMBED=hash`를 넣습니다. 내려받기 없이 글자 조각으로 만든 간이 벡터를 씁니다. 뜻을 이해하지 못해서 *단어를 바꿔 쓴 질문*에 약한데, 그 차이도 좋은 관찰 거리입니다.
 - 모델 이름 · 단가는 Day 1과 같이 `.env`의 `MODEL`과 `common/llm.py`에서 강의 당일 기준으로 확인합니다.
 
 ## 2. 세션별 진행
@@ -97,13 +96,12 @@ loop.run("서울로 3박 출장을 가면 숙박비 한도는 모두 얼마인�
 
 ## 7. 모의 모드
 
-`.env`에 `LLM_MOCK=1`, `EMBED=hash`를 두면 키 · 인터넷 없이 다섯 노트북이 끝까지 돕니다. 점수는 의미가 없고 흐름만 확인합니다. 도구 루프는 모의 모드에서 "search → calculator → 종료"를 흉내 냅니다.
+`.env`에 `LLM_MOCK=1`, `EMBED=hash`를 두면 API 키 · 임베딩 모델 없이 다섯 노트북이 끝까지 돕니다(강사 리허설 · 테스트용 — `EMBED=hash`는 글자 조각으로 만든 간이 벡터라 검색 품질은 의미가 없습니다). 점수는 의미가 없고 흐름만 확인합니다. 도구 루프는 모의 모드에서 "search → calculator → 종료"를 흉내 냅니다.
 
 ## 8. 자주 막히는 곳
 
 | 증상 | 확인할 것 |
 |---|---|
-| 임베딩 모델 내려받기가 멈춤 · 403 | 강의장 방화벽 — `EMBED=hash`로 진행 |
 | `No module named 'sentence_transformers'` | 가상환경을 켰는가 · `pip install -r requirements.txt` |
 | chroma `Expected a name containing 3-512 characters` | `Index.build(name=…)`의 이름은 영문 · 숫자 3자 이상 |
 | 노트북에서 `NameError: idx` | 위 셀(색인 만들기)을 먼저 실행 |
