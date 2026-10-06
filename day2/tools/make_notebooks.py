@@ -160,13 +160,41 @@ nb03 = [
     M("""# 03a · 임베딩 · 청킹 · 색인 · 검색 비교
 **3세션 · 고르기 · RAG (오전)** — 실습 30분
 
-RAG의 다섯 단계 — 자르기 → 벡터로 바꾸기 → 저장 → **검색** → 주입해서 묻기.
+RAG의 다섯 단계 — 자르기 → 벡터로 바꾸기 → 저장 → **검색** → 주입해서 묻기 — 를 0절에서 먼저 한 번에 따라가 보고, 1~4절에서 하나씩 더 깊이 봅니다.
 새로 배우는 것은 검색 하나이고, 나머지는 어제 배운 프롬프트입니다.
 
 > 임베딩 모델은 처음 실행할 때 내려받습니다(약 470MB). 강의장에서 막히면 `.env`에 `EMBED=hash`를 넣고 커널을 다시 시작합니다."""),
     C(SETUP_RAG + '''
 import numpy as np'''),
-    M("""## 1. 임베딩 — 뜻이 비슷하면 숫자도 가깝다"""),
+    M("""## 0. 한 질문이 답이 되기까지 — 다섯 단계
+질문 하나를 끝까지 따라갑니다. 코드를 읽을 필요는 없습니다 — 아래 다섯 셀을 순서대로 실행하고 출력만 보면 됩니다.
+
+**질문**: "연차를 쓰려면 언제까지 신청해야 하나요?\""""),
+    C('''Q0 = "연차를 쓰려면 언제까지 신청해야 하나요?"
+
+chunks = rag.chunk_folder("data/kb", max_len=800, overlap=100)
+print(f"① 청킹 — 사내 자료 20편을 조각 {len(chunks)}개로 미리 잘라 둡니다.")
+example = next(c for c in chunks if "연차" in c["text"])
+print("   예시 조각:", example["source"], "·", example["title"])
+print("  ", example["text"][:120].replace("\\n", " "))'''),
+    C('''vec = rag.embed(Q0)
+print(f"② 임베딩 — 질문이 숫자 벡터로 바뀝니다 (차원 {vec.shape[0]})")
+print("   앞 6개 값:", [round(float(x), 3) for x in vec[:6]])
+print("   → 이 숫자 자체를 읽을 필요는 없습니다. 뜻이 비슷한 문장일수록 이 숫자들이 서로 가까워진다는 것만 기억합니다.")'''),
+    C('''idx = rag.Index.build(chunks)
+hits = idx.search(Q0, k=3)
+print("③ 검색 — 질문과 가장 가까운 조각 3개 (거리 · 작을수록 가깝다)")
+for h in hits:
+    print("  ", h)'''),
+    C('''prompt = rag.make_prompt(Q0, hits)
+print("④ LLM에 들어가는 최종 입력 — 모델이 보는 것은 이것이 전부입니다")
+print(prompt)'''),
+    C('''r = llm.call(prompt, max_tokens=300)
+print("⑤ 최종 결과")
+print(r.text)'''),
+    M("""이 다섯 셀이 RAG의 전부입니다. 아래부터는 단계마다 하나씩 더 깊이 봅니다."""),
+    M("""## 1. 임베딩 — 뜻이 비슷하면 숫자도 가깝다
+방금 ②에서 본 숫자가 실제로 뜻을 반영하는지, 토이 예시로 확인합니다."""),
     C('''docs = ["연차는 사용 3일 전까지 팀장 승인을 받는다",
         "출장비는 귀임 후 7일 이내 정산한다",
         "비밀번호는 90일마다 바꾼다"]
@@ -182,7 +210,7 @@ for q in ["휴가 신청은 어떻게 해요?", "교통비 돌려받는 법", "�
     C('''import inspect
 print(inspect.getsource(rag.chunk).split('"""')[0] + "...")
 
-chunks = rag.chunk_folder("data/kb", max_len=800, overlap=100)
+# chunks는 0단계(①)에서 이미 만들어 두었습니다 — 같은 변수를 계속 씁니다.
 print(f"\\n20편 → 조각 {len(chunks)}개 · 가장 긴 조각 {max(len(c['text']) for c in chunks)}자")'''),
     M("""### 조각 10개를 무작위로 뽑아 사람이 읽는다
 - 혼자 읽어도 뜻이 통하는가
@@ -194,7 +222,7 @@ for c in random.sample(chunks, 10):
     print(c["text"][:150].replace("\\n", " "), "\\n")'''),
     M("""## 3. 색인 — 벡터 DB에 넣는다
 조각 · 벡터 · 출처를 함께 저장합니다. 출처가 있어야 나중에 각주를 달 수 있습니다."""),
-    C('''idx = rag.Index.build(chunks)
+    C('''# idx도 0단계(③)에서 이미 만들어 두었습니다.
 print("저장한 조각:", idx.col.count())
 
 for h in idx.search("연차는 언제까지 신청해요?", k=3):
