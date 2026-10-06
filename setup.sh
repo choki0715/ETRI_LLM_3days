@@ -2,7 +2,7 @@
 # ETRI LLM 3일 과정 — 환경 설정 (가상환경 하나 · requirements.txt 하나 · .env 하나)
 #
 #   ./setup.sh                          # 전체
-#   ./setup.sh --skip-model-download    # day2 임베딩 모델(약 470MB) 다운로드 건너뛰기
+#   ./setup.sh --skip-model-download    # day2 임베딩 모델(한국어 특화, 약 420MB) 다운로드 건너뛰기
 #   ./setup.sh --skip-playwright        # day3 자동 플레이 테스트용 chromium 설치 건너뛰기
 #
 # 루트에 .venv 하나를 만들고 requirements.txt 하나로 day1·day2·day3 패키지를 모두 설치합니다.

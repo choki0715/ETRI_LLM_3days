@@ -6,7 +6,7 @@
     answer, hits = rag.ask("연차는 며칠 전에 신청하나요?", idx)
 
 임베딩 모델
-- 기본: sentence-transformers 다국어 공개 모델 (처음 실행 때 약 470MB를 내려받는다 — 강의 전날 미리)
+- 기본: 한국어 특화 공개 모델(jhgan/ko-sroberta-multitask) — 다국어 모델보다 한국어 문장 유사도를 더 정확히 잰다 (처음 실행 때 약 420MB를 내려받는다 — 강의 전날 미리)
 - EMBED=hash: 내려받기 없이 글자 조각으로 만드는 간이 벡터. 인터넷이 막힌 강의장 · 리허설용.
   뜻을 이해하지 못하므로 "단어를 바꿔 쓴 질문"에서 성능이 떨어진다 — 그것도 관찰 거리다.
 """
@@ -25,7 +25,7 @@ import numpy as np
 from common import llm
 
 ROOT = Path(__file__).resolve().parents[1]
-ST_MODEL = os.getenv("ST_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+ST_MODEL = os.getenv("ST_MODEL", "jhgan/ko-sroberta-multitask")
 EMBED = os.getenv("EMBED", "st")          # st | hash
 
 

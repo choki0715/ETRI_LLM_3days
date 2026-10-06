@@ -8,7 +8,7 @@ LLM 기본 & 바이브 코딩 3일 과정 — Day 2 슬라이드(`LLM_basic_Day2
 
 ```bash
 # 루트(ETRI_LLM_3days/)에서 한 번만 — day1·day2·day3 공용 가상환경 · .env
-./setup.sh                         # 임베딩 모델(약 470MB) 다운로드까지 — 꼭 전날에
+./setup.sh                         # 임베딩 모델(한국어 특화, 약 420MB) 다운로드까지 — 꼭 전날에
 source .venv/bin/activate
 
 cd day2
