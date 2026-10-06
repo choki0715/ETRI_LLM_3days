@@ -174,9 +174,10 @@ import numpy as np'''),
 
 chunks = rag.chunk_folder("data/kb", max_len=800, overlap=100)
 print(f"① 청킹 — 사내 자료 20편을 조각 {len(chunks)}개로 미리 잘라 둡니다.")
-example = next(c for c in chunks if "연차" in c["text"])
+example = next(c for c in chunks if "연차 사용 절차" in c["text"])    # 질문의 답이 든 조각 하나를 미리 본다
 print("   예시 조각:", example["source"], "·", example["title"])
-print("  ", example["text"][:120].replace("\\n", " "))'''),
+print("  ", example["text"][:120].replace("\\n", " "))
+print("   → 조각 하나 = 본문 + 출처 + 제목. 이 조각이 ③검색에서 다시 나오는지 봅니다.")'''),
     C('''vec = rag.embed(Q0)
 print(f"② 임베딩 — 질문이 숫자 벡터로 바뀝니다 (차원 {vec.shape[0]})")
 print("   앞 6개 값:", [round(float(x), 3) for x in vec[:6]])
