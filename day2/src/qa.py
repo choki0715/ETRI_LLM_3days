@@ -1,14 +1,20 @@
-"""Day 2 3세션 · 근거를 달고 답하는 질의응답 — 10문항 채점과 고장 위치 추정.
+"""Day 2 3세션 · RAG 질의응답 10문항 채점.
 
-고정 문항 · 판정 기준 · 반복 기록으로 측정한다.
-다른 점: 실패를 '어느 단계의 고장인지'로 나눈다.
+    from src import rag, qa
+    idx = rag.Index.build(rag.chunk_folder("data/kb"))
+    passed, fails, rows = qa.run_qa(idx, k=3)
 
-    검색·청킹  넣은 자료에 답이 든 조각이 없다          → k · 질문 말투 · 키워드 검색 · 자르는 법
-              (정답 문서가 아예 안 왔으면 검색, 왔는데 다른 조각이거나 잘렸으면 청킹을 먼저 의심 —
-               debug()로 조각을 열어 사람이 가린다)
-    있는데 못 씀  자료에 답이 있는데 답에 없다          → 주입 코드 · 프롬프트 위치
-    지어냄    답이 없는 질문에 "자료에 없음"이 아니다   → 거절 지시
-    출처 오류 답은 맞는데 각주가 정답 문서를 가리키지 않는다
+문항은 data/qa_tests.jsonl 에 고정돼 있다. 문항마다 rag.ask()로 답을 받고 check_qa()로 판정한다.
+실패는 "어느 단계가 고장났는가"로 나눈다 — 유형이 곧 고칠 곳이다.
+
+    유형          뜻                                        고칠 곳
+    ─────────── ───────────────────────────────────────── ──────────────────────────
+    지어냄        답 없는 질문에 "자료에 없음"이라 하지 않음   거절 지시(RULES)
+    검색·청킹     정답이 든 조각이 프롬프트에 들어가지 못함    k · 질문 말투 · 키워드 검색 · 자르는 법
+    있는데 못 씀   정답 조각은 들어갔는데 답에 없음            프롬프트 · 모델
+    출처 오류     답은 맞는데 각주가 정답 파일을 안 가리킴     각주 규칙
+
+코드는 유형까지만 가린다. 그 안에서 정확히 무엇이 잘못됐는지는 rag.debug()로 조각을 열어 사람이 본다.
 """
 from __future__ import annotations
 
@@ -16,96 +22,66 @@ import json
 from collections import Counter
 from pathlib import Path
 
-from common import llm
-
 from . import rag
 
 ROOT = Path(__file__).resolve().parents[1]
-KINDS = ["검색·청킹", "있는데 못 씀", "지어냄", "출처 오류"]
-REFUSAL = "자료에 없음"
+REFUSAL = "자료에 없음"          # RULES의 거절 문구와 글자가 같아야 한다
 
 
 def load_qa(path="data/qa_tests.jsonl") -> list[dict]:
+    """문항 파일을 읽는다. 한 줄이 문항 하나."""
     p = Path(path)
     if not p.is_absolute():
         p = ROOT / p
-    return [json.loads(l) for l in p.read_text(encoding="utf-8").splitlines() if l.strip()]
+    return [json.loads(line) for line in p.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
 def check_qa(answer: str, hits: list, spec: dict) -> tuple[bool, str | None, str]:
-    """문항 하나를 판정한다 → (통과 여부, 실패 유형, 설명 한 줄).
+    """문항 하나를 판정한다 → (통과 여부, 실패 유형, 설명).
 
     answer  모델이 낸 답
-    hits    ask()가 검색해서 프롬프트에 넣은 조각들 (Hit 리스트, k개)
-    spec    qa_tests.jsonl 한 줄 — expect(정답에 있어야 할 말) · source(정답 파일) · refuse(답이 없어야 정상)
+    hits    프롬프트에 넣은 조각들 (검색 결과 k개, 순서대로 자료 번호 1, 2, 3…)
+    spec    문항 한 줄 — expect(답에 있어야 할 말) · source(정답 파일) · refuse(답이 없어야 정상)
 
-    체 다섯 개를 파이프라인 순서(검색 → 모델 → 출력 형식)로 통과시키고, 먼저 걸리는 데서 멈춘다.
-    그래서 실패 유형 하나가 곧 "어느 단계를 먼저 고쳐야 하는가"가 된다.
+    검사 순서는 파이프라인 순서다: 자료가 왔나 → 그 안에 답이 있나 → 모델이 썼나 → 근거를 맞게 달았나.
+    앞에서 걸리면 뒤는 보지 않는다.
     """
-    # 체 1 — 답없음 문항(refuse: true)은 이것만 본다. 정답 문서라는 게 없으므로 아래 체 2~5는 거치지 않는다.
-    #   예) 7번 "사내 헬스장은 몇 시까지 운영하나요?"  (자료에 헬스장 얘기가 없음)
-    #       answer = "자료에 없음"                                             → 통과
-    #       answer = "자료에 없음\n\n제공된 자료에는 사내식당 운영 시간만 있습니다."  → 통과 (글자가 들어 있으면 뒤에 설명이 붙어도 됨)
-    #       answer = "사내 헬스장은 오후 9시까지 운영합니다. [2]"                  → 지어냄 (2번 자료는 식당 안내인데 헬스장 시간을 만들어 냄)
+    # 답없음 문항 — "자료에 없음"이 들어 있으면 통과, 아니면 지어냄. 여기서 끝.
     if spec.get("refuse"):
-        if REFUSAL in answer:                     # "자료에 없음"이 답 어딘가에 있으면 통과 (뒤에 설명이 붙어도 됨)
+        if REFUSAL in answer:
             return True, None, ""
         return False, "지어냄", "답이 없는 질문에 답함: " + _one_line(answer)
 
-    # ---- 여기부터 답이 있어야 하는 문항 ----
-    exp = spec["expect"]                                            # 정답에 꼭 들어 있어야 할 말. 예: ["3일"]
-    src_hits = [h for h in hits if h.source == spec["source"]]      # 검색된 k개 중 정답 파일에서 온 조각만 추림
+    expect = spec["expect"]                                         # 예: ["3일"]
+    answer_file = spec["source"]                                    # 예: "01_일반업무규칙.txt"
 
-    # 체 2 — 정답 "파일"이 검색조차 안 됐다. 검색은 항상 k개를 돌려주므로 hits는 비지 않는다 — 전부 엉뚱한 파일인 것.
-    #        모델 답은 보지 않는다: 자료를 못 받았으면 모델 잘못이 아니다. 고칠 곳 = 검색(k · 질문 말투 · 키워드 검색 병행).
-    if not src_hits:
-        return False, "검색·청킹", "정답 문서가 안 옴 — 넣은 자료: " + ", ".join(h.source for h in hits)
+    # 1. 정답 파일에서 온 조각이 있나
+    from_answer_file = [h for h in hits if h.source == answer_file]
+    if not from_answer_file:
+        got = ", ".join(h.source for h in hits)
+        return False, "검색·청킹", f"정답 파일이 안 옴 — 대신 온 것: {got}"
 
-    # 체 3 — 파일은 맞는데 그 안의 "다른 조각"이 왔다 (같은 규칙집의 다른 조항이거나, 잘려서 정답 부분이 빠진 것).
-    #        h.text(조각 본문)를 본다 — 아직 모델 답이 아니다. 정답이 프롬프트에 들어가지도 못한 경우. 고칠 곳 = 청킹 · 검색.
-    if not any(e in h.text for h in src_hits for e in exp):
-        return False, "검색·청킹", f"정답 문서의 다른 조각이 옴 ('{exp[0]}' 없음) — 조각이 잘렸는지 debug로 확인"
+    # 2. 그 조각 본문에 정답이 있나 (같은 파일의 다른 조항이거나 잘렸으면 없다)
+    if not any(e in h.text for h in from_answer_file for e in expect):
+        return False, "검색·청킹", f"정답 파일은 왔는데 '{expect[0]}'이 없는 조각 — 잘렸는지 debug로 확인"
 
-    # 체 4 — 여기부터 모델 답(answer)을 본다. 정답이 든 조각이 프롬프트에 들어갔는데
-    #        모델이 "자료에 없음"이라 거절했거나, 답에 정답 단어가 없다. 고칠 곳 = 프롬프트(RULES · 자료 위치) · 모델.
-    #   예) 1번 문항, 정답 조각(제14조 "사용일 3일 전까지")이 프롬프트에 들어간 상태에서
-    #       answer = "자료에 없음"                                   → 있는데 못 씀 (자료를 주고도 거절 — drop_context 고장이 만드는 증상)
-    #       answer = "그룹웨어에서 부서장 승인을 받으면 됩니다. [1]"        → 있는데 못 씀 (3일을 빼먹음)
-    #       answer = "연차는 사용일 5일 전까지 신청해야 합니다. [1]"       → 있는데 못 씀 (틀린 숫자, "3일"이 없음)
-    #       answer = "연차는 사용일 3일 전까지 신청해야 합니다. [1]"       → 통과 → 체 5로
-    #   한계: 글자 포함만 보므로 "3일이 아니라 5일입니다"처럼 틀린 답도 "3일"이 들어 있어 통과한다 — 최종 확인은 사람이 debug로.
-    if REFUSAL in answer or not any(e in answer for e in exp):
+    # 3. 모델이 그 정답을 답에 썼나
+    if REFUSAL in answer or not any(e in answer for e in expect):
         return False, "있는데 못 씀", "답: " + _one_line(answer)
 
-    # 체 5 — 답 내용은 맞다. 각주가 정답 파일을 가리키는지 본다.
-    #
-    #   프롬프트의 자료 번호는 make_prompt가 hits 순서대로 1, 2, 3… 매긴 것이다. 그 표를 그대로 다시 만든다.
-    #   예) 1번 문항:  {1: "01_일반업무규칙.txt", 2: "05_휴가_FAQ.txt", 3: "05_휴가_FAQ.txt"}
+    # 4. 각주가 정답 파일을 가리키나
+    #    자료 번호 → 파일 표를 만들고, 답의 [n]을 그 표로 바꾼다. 표에 없는 번호는 None.
     number_to_file = {i + 1: h.source for i, h in enumerate(hits)}
-
-    #   답에서 [n]을 뽑아 위 표로 파일명을 찾는다. 표에 없는 번호([7] 등)는 None → 정답 파일과 다름.
-    #   예) 정답 파일 = 01_일반업무규칙.txt 일 때
-    #       "… 3일 전까지 … [1]"          footnotes=[1]    → {1: 01_일반업무규칙}           → 통과
-    #       "… 3일 전까지 … [2]"          footnotes=[2]    → {2: 05_휴가_FAQ}                → 출처 오류 (내용은 맞는데 근거를 FAQ에 닮)
-    #       "… [1] … [3]"                 footnotes=[1, 3] → 1번이 정답 파일, 하나면 충분    → 통과
-    #       "… 3일 전까지 … [7]"          footnotes=[7]    → 표에 없음 → None               → 출처 오류
-    #       "… 3일 전까지 …" (각주 없음)   footnotes=[]     → 볼 게 없음                    → 출처 오류 (각주를 안 닮)
     footnotes = rag.cited(answer)
     cited_files = [number_to_file.get(n) for n in footnotes]
-    if spec["source"] not in cited_files:
-        return False, "출처 오류", f"각주 {footnotes} → {cited_files} — 정답 문서는 {spec['source']}"
+    if answer_file not in cited_files:
+        return False, "출처 오류", f"각주 {footnotes} → {cited_files} — 정답 파일은 {answer_file}"
 
-    # 다 지나오면 통과
     return True, None, ""
 
 
-def _one_line(text: str, n: int = 50) -> str:
-    t = " ".join(text.split())
-    return t[:n] + ("…" if len(t) > n else "")
-
-
 def run_qa(idx, k: int = 3, tests: list[dict] | None = None, show: bool = True, **ask_kw):
-    """10문항을 돌려 (통과 수, 실패 목록, 행)을 돌려준다. ask_kw는 rag.ask로 넘어간다."""
+    """문항 전체를 돌려 (통과 수, 실패 목록, 문항별 결과)를 돌려준다. ask_kw는 rag.ask()로 그대로 넘어간다."""
     tests = tests or load_qa()
     rows = []
     for t in tests:
@@ -113,13 +89,21 @@ def run_qa(idx, k: int = 3, tests: list[dict] | None = None, show: bool = True, 
         ok, kind, why = check_qa(answer, hits, t)
         rows.append(dict(id=t["id"], group=t["group"], q=t["q"], ok=ok, kind=kind, why=why,
                          answer=answer, sources=[h.source for h in hits]))
+
     passed = sum(r["ok"] for r in rows)
     fails = [(r["id"], r["kind"]) for r in rows if not r["ok"]]
+
     if show:
-        print(f"통과 {passed} / {len(rows)}   " +
-              "  ".join(f"{k} {v}" for k, v in Counter(k for _, k in fails).items()))
+        by_kind = Counter(kind for _, kind in fails)
+        print(f"통과 {passed} / {len(rows)}   " + "  ".join(f"{kind} {n}" for kind, n in by_kind.items()))
         for r in rows:
             mark = "○" if r["ok"] else "×"
-            print(f"  {mark} #{r['id']:>2} [{r['group']}] {r['q'][:30]:<32}" +
-                  ("" if r["ok"] else f" → {r['kind']}: {r['why']}"))
+            tail = "" if r["ok"] else f" → {r['kind']}: {r['why']}"
+            print(f"  {mark} #{r['id']:>2} [{r['group']}] {r['q'][:30]:<32}{tail}")
     return passed, fails, rows
+
+
+def _one_line(text: str, n: int = 50) -> str:
+    """여러 줄 답을 한 줄 n자로 줄인다 (설명용)."""
+    t = " ".join(text.split())
+    return t[:n] + ("…" if len(t) > n else "")
