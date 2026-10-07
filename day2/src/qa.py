@@ -33,22 +33,48 @@ def load_qa(path="data/qa_tests.jsonl") -> list[dict]:
 
 
 def check_qa(answer: str, hits: list, spec: dict) -> tuple[bool, str | None, str]:
+    """문항 하나를 판정한다 → (통과 여부, 실패 유형, 설명 한 줄).
+
+    answer  모델이 낸 답
+    hits    ask()가 검색해서 프롬프트에 넣은 조각들 (Hit 리스트, k개)
+    spec    qa_tests.jsonl 한 줄 — expect(정답에 있어야 할 말) · source(정답 파일) · refuse(답이 없어야 정상)
+
+    체 다섯 개를 파이프라인 순서(검색 → 모델 → 출력 형식)로 통과시키고, 먼저 걸리는 데서 멈춘다.
+    그래서 실패 유형 하나가 곧 "어느 단계를 먼저 고쳐야 하는가"가 된다.
+    """
+    # 체 1 — 답없음 문항(refuse: true)은 이것만 본다. 정답 문서라는 게 없으므로 아래 체 2~5는 거치지 않는다.
     if spec.get("refuse"):
-        if REFUSAL in answer:
+        if REFUSAL in answer:                     # "자료에 없음"이 답 어딘가에 있으면 통과 (뒤에 설명이 붙어도 됨)
             return True, None, ""
         return False, "지어냄", "답이 없는 질문에 답함: " + _one_line(answer)
 
-    exp = spec["expect"]
-    src_hits = [h for h in hits if h.source == spec["source"]]
+    # ---- 여기부터 답이 있어야 하는 문항 ----
+    exp = spec["expect"]                                            # 정답에 꼭 들어 있어야 할 말. 예: ["3일"]
+    src_hits = [h for h in hits if h.source == spec["source"]]      # 검색된 k개 중 정답 파일에서 온 조각만 추림
+
+    # 체 2 — 정답 "파일"이 검색조차 안 됐다. 검색은 항상 k개를 돌려주므로 hits는 비지 않는다 — 전부 엉뚱한 파일인 것.
+    #        모델 답은 보지 않는다: 자료를 못 받았으면 모델 잘못이 아니다. 고칠 곳 = 검색(k · 질문 말투 · 키워드 검색 병행).
     if not src_hits:
         return False, "검색·청킹", "정답 문서가 안 옴 — 넣은 자료: " + ", ".join(h.source for h in hits)
+
+    # 체 3 — 파일은 맞는데 그 안의 "다른 조각"이 왔다 (같은 규칙집의 다른 조항이거나, 잘려서 정답 부분이 빠진 것).
+    #        h.text(조각 본문)를 본다 — 아직 모델 답이 아니다. 정답이 프롬프트에 들어가지도 못한 경우. 고칠 곳 = 청킹 · 검색.
     if not any(e in h.text for h in src_hits for e in exp):
         return False, "검색·청킹", f"정답 문서의 다른 조각이 옴 ('{exp[0]}' 없음) — 조각이 잘렸는지 debug로 확인"
+
+    # 체 4 — 여기부터 모델 답(answer)을 본다. 정답이 든 조각이 프롬프트에 들어갔는데
+    #        모델이 "자료에 없음"이라 거절했거나, 답에 정답 단어가 없다. 고칠 곳 = 프롬프트(RULES · 자료 위치) · 모델.
+    #        한계: 글자 포함만 보므로 "3일이 아니라 5일"처럼 틀린 답도 통과할 수 있다 — 최종 확인은 사람이 debug로.
     if REFUSAL in answer or not any(e in answer for e in exp):
         return False, "있는데 못 씀", "답: " + _one_line(answer)
+
+    # 체 5 — 답 내용은 맞다. 각주 [n]이 가리키는 조각(hits[n-1])이 정답 파일인지 본다.
+    #        1 <= n <= len(hits)는 모델이 [7]처럼 없는 번호를 달았을 때 인덱스 오류를 막는 것.
     refs = rag.cited(answer)
     if not any(1 <= n <= len(hits) and hits[n - 1].source == spec["source"] for n in refs):
         return False, "출처 오류", f"각주 {refs} — 정답 문서는 {spec['source']}"
+
+    # 다 지나오면 통과
     return True, None, ""
 
 
