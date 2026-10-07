@@ -77,27 +77,23 @@ def check_qa(answer: str, hits: list, spec: dict) -> tuple[bool, str | None, str
     if REFUSAL in answer or not any(e in answer for e in exp):
         return False, "있는데 못 씀", "답: " + _one_line(answer)
 
-    # 체 5 — 답 내용은 맞다. 각주 [n]이 가리키는 조각(hits[n-1])이 정답 파일인지 본다.
+    # 체 5 — 답 내용은 맞다. 각주가 정답 파일을 가리키는지 본다.
     #
-    #   각주 번호 n은 "파일 번호"가 아니라 make_prompt가 hits 순서대로 매긴 자료 순번(1부터)이다.
-    #   예) 1번 문항 "연차는 사용일 며칠 전까지 신청해야 하나요?"  정답 파일 = 01_일반업무규칙.txt
-    #       프롬프트의 자료:  [1] hits[0] = 01_일반업무규칙.txt   [2] hits[1] = 05_휴가_FAQ.txt   [3] hits[2] = 05_휴가_FAQ.txt
-    #
-    #       answer = "연차는 사용일 3일 전까지 부서장 승인을 받아야 합니다. [1]"
-    #           → refs = [1] → hits[0].source = 01_일반업무규칙.txt = 정답 파일        → 통과
-    #       answer = "연차는 사용일 3일 전까지 부서장 승인을 받아야 합니다. [2]"
-    #           → refs = [2] → hits[1].source = 05_휴가_FAQ.txt ≠ 정답 파일           → 출처 오류 (내용은 맞는데 근거를 FAQ에 닮)
-    #       answer = "연차는 사용일 3일 전까지 신청합니다. [1] 남은 연차는 근태 메뉴에서 봅니다. [3]"
-    #           → refs = [1, 3] → [1]은 정답 파일, [3]은 아님 → any()라 하나만 맞으면   → 통과
-    #       answer = "연차는 사용일 3일 전까지 신청해야 합니다. [7]"
-    #           → refs = [7] → 자료가 3개뿐이라 범위 밖 → hits[6]을 건드리지 않고 거짓   → 출처 오류
-    #       answer = "연차는 사용일 3일 전까지 신청해야 합니다."
-    #           → refs = []  → 비교할 각주가 없어 any([])는 거짓                        → 출처 오류 (각주를 안 닮)
-    #
-    #   1 <= n <= len(hits)는 위 [7]처럼 없는 번호가 왔을 때 IndexError를 막는 것.
-    refs = rag.cited(answer)
-    if not any(1 <= n <= len(hits) and hits[n - 1].source == spec["source"] for n in refs):
-        return False, "출처 오류", f"각주 {refs} — 정답 문서는 {spec['source']}"
+    #   프롬프트의 자료 번호는 make_prompt가 hits 순서대로 1, 2, 3… 매긴 것이다. 그 표를 그대로 다시 만든다.
+    #   예) 1번 문항:  {1: "01_일반업무규칙.txt", 2: "05_휴가_FAQ.txt", 3: "05_휴가_FAQ.txt"}
+    number_to_file = {i + 1: h.source for i, h in enumerate(hits)}
+
+    #   답에서 [n]을 뽑아 위 표로 파일명을 찾는다. 표에 없는 번호([7] 등)는 None → 정답 파일과 다름.
+    #   예) 정답 파일 = 01_일반업무규칙.txt 일 때
+    #       "… 3일 전까지 … [1]"          footnotes=[1]    → {1: 01_일반업무규칙}           → 통과
+    #       "… 3일 전까지 … [2]"          footnotes=[2]    → {2: 05_휴가_FAQ}                → 출처 오류 (내용은 맞는데 근거를 FAQ에 닮)
+    #       "… [1] … [3]"                 footnotes=[1, 3] → 1번이 정답 파일, 하나면 충분    → 통과
+    #       "… 3일 전까지 … [7]"          footnotes=[7]    → 표에 없음 → None               → 출처 오류
+    #       "… 3일 전까지 …" (각주 없음)   footnotes=[]     → 볼 게 없음                    → 출처 오류 (각주를 안 닮)
+    footnotes = rag.cited(answer)
+    cited_files = [number_to_file.get(n) for n in footnotes]
+    if spec["source"] not in cited_files:
+        return False, "출처 오류", f"각주 {footnotes} → {cited_files} — 정답 문서는 {spec['source']}"
 
     # 다 지나오면 통과
     return True, None, ""
