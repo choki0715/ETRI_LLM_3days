@@ -60,7 +60,7 @@ export PY=~/ETRI_LLM_3days/.venv/bin/python            # 공용 가상환경의 
 
 ## 강사 메모 · 확인한 것
 
-- `01_mcp` — 서버는 sf-harness 없이 Day 2 한빛정밀 자료(`day2/data/kb`)만 읽는다. mcp 2.2.0에서 `check_server.py`로 도구 목록 · 호출 결과("서울 출장 숙박비 한도" → 출장비 규정 제3조가 1위)를 확인했고, 서버를 따로 띄운 뒤(HTTP, 127.0.0.1:9800) Claude Code 2.1.266에서 `claude mcp add --transport http hanbit-docs http://127.0.0.1:9800/mcp` 후 `claude mcp list`가 **Connected**. `claude -p`로 모델 동작도 확인 — 긴 · 짧은 설명이면 규정 질문에 도구를 부르고, 틀린 설명(날씨 조회)이면 5번 중 5번 안 불렀다 (자세한 것은 01_mcp README 강사 메모)
+- `01_mcp` — 서버는 sf-harness 없이 Day 2 한빛정밀 자료(`day2/data/kb`)만 읽고, 도구는 search_docs · calculator 둘. `mcp_client.py`(Haiku 4.5)와 Claude Code 모두 무게 질문에서 search → calculator 순서로 골랐다. mcp 2.2.0에서 `check_server.py`로 도구 목록 · 호출 결과("서울 출장 숙박비 한도" → 출장비 규정 제3조가 1위)를 확인했고, 서버를 따로 띄운 뒤(HTTP, 127.0.0.1:9800) Claude Code 2.1.266에서 `claude mcp add --transport http hanbit-docs http://127.0.0.1:9800/mcp` 후 `claude mcp list`가 **Connected**. `claude -p`로 모델 동작도 확인 — 긴 · 짧은 설명이면 규정 질문에 도구를 부르고, 틀린 설명(날씨 조회)이면 5번 중 5번 안 불렀다 (자세한 것은 01_mcp README 강사 메모)
 - `02_breakout` — 강사 답안이 자동 플레이 테스트 12개 통과. 일부러 고장 낸 판에서는 패들 이탈 · 모서리 다중 파괴를 잡아냄
 - `03_sf_harness` — 풀이 패치 셋이 sf-harness 0.2.0에 그대로 적용되고 테스트 통과 (가: 159 · 나: 166 · 다: 161). 안내의 터미널 명령 결과(CRIT 연속 12 → 17, CONV-01 STALE 45, PRESS-01 FLATLINE)를 실제로 돌려 확인
 - `04_my_harness` — 뼈대 테스트 26개 통과, `claude plugin validate` 경고 없이 통과

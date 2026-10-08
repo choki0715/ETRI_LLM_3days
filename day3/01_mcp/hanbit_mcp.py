@@ -1,4 +1,4 @@
-"""hanbit-docs MCP 서버 — 한빛정밀 사내 자료 20편을 검색하는 도구 하나 (Day 3 1세션 실습).
+"""hanbit-docs MCP 서버 — 사내 자료 검색(search_docs) · 계산기(calculator) 도구 둘 (Day 3 1세션 실습).
 
 서버는 혼자 따로 띄워 두고, 클라이언트(check_server.py · Claude Code)가 주소로 접속한다.
 
@@ -9,7 +9,7 @@
     python check_server.py
     claude mcp add --transport http hanbit-docs http://127.0.0.1:9800/mcp
 
-어제(Day 2) loop.py의 search 도구를 MCP 서버로 떼어 낸 것이다.
+어제(Day 2) loop.py의 search · calculator 두 도구를 MCP 서버로 떼어 낸 것이다.
 loop.py에서는 우리 루프만 그 도구를 쓸 수 있었지만, MCP 서버로 만들면 Claude Code 같은 다른 프로그램도 붙여 쓸 수 있다.
 
 관찰 실험: 도구 설명을 짧게 · 틀리게 바꿔 서버를 다시 띄우면 모델이 언제 부르는지가 달라지는가 (README 5 · 6번).
@@ -19,11 +19,12 @@ loop.py에서는 우리 루프만 그 도구를 쓸 수 있었지만, MCP 서버
     1. 도구 설명   — LONG / SHORT (모델이 읽고 언제 부를지 정하는 글)
     2. 자료 읽기   — load_paragraphs (Day 2 사내 자료를 문단으로 자른다)
     3. 검색       — search (질문과 글자가 많이 겹치는 문단을 고른다)
-    4. 도구       — search_docs (모델이 부르면 검색 결과를 출처와 함께 돌려준다)
+    4. 도구       — search_docs (검색 결과를 출처와 함께) · calculator (두 수의 사칙연산)
     5. 서버 시작   — HTTP로 열어 두고 접속을 기다린다
 """
 import os
 from pathlib import Path
+from typing import Literal
 
 from mcp.server.mcpserver import MCPServer
 
@@ -149,6 +150,32 @@ def search_docs(query: str) -> str:
     return result
 
 
+CALCULATOR_DESCRIPTION = ("두 숫자의 사칙연산을 정확히 계산한다. "
+                          "금액 · 수량 · 무게 · 날짜 수 계산은 머릿속으로 하지 말고 반드시 이 도구를 쓴다. "
+                          "op는 add 더하기 · sub 빼기 · mul 곱하기 · div 나누기.")
+
+
+@mcp.tool(description=CALCULATOR_DESCRIPTION)
+def calculator(a: float, b: float, op: Literal["add", "sub", "mul", "div"]) -> str:
+    """Day 2 loop.py의 calculator와 같다. Literal[...]은 op에 넣을 수 있는 값을 넷으로 정한다 — 스키마의 enum이 된다."""
+    if op == "add":
+        result = a + b
+    elif op == "sub":
+        result = a - b
+    elif op == "mul":
+        result = a * b
+    elif op == "div":
+        if b == 0:
+            result = "오류: 0으로 나눌 수 없음"
+        else:
+            result = a / b
+    else:
+        result = "오류: 모르는 연산 " + op
+
+    print(f"[호출] calculator(a={a}, b={b}, op={op!r}) → {result}", flush=True)
+    return str(result)
+
+
 # 문서를 고치거나 지우는 '쓰는' 도구는 일부러 만들지 않는다.
 # 되돌릴 수 없는 행동은 MCP로 노출하지 않고 사람에게 남긴다.
 
@@ -161,7 +188,7 @@ if __name__ == "__main__":
     else:
         mode = "틀린 설명"
     print(f"hanbit-docs 서버 — http://{HOST}:{PORT}/mcp", flush=True)
-    print(f"  도구: search_docs   설명: {mode} ({DESCRIPTION.splitlines()[0][:40]}…)", flush=True)
+    print(f"  도구: search_docs (설명: {mode} — {DESCRIPTION.splitlines()[0][:30]}…) · calculator", flush=True)
     print(f"  자료: 문단 {len(PARAGRAPHS)}개 · 멈추려면 Ctrl+C", flush=True)
     try:
         mcp.run(transport="streamable-http", host=HOST, port=PORT)    # HTTP로 열어 두고 접속을 기다린다
