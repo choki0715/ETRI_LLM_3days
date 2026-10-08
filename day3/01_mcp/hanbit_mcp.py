@@ -6,8 +6,9 @@
 어제(Day 2) loop.py의 search 도구를 MCP 서버로 떼어 낸 것이다.
 loop.py에서는 우리 루프만 그 도구를 쓸 수 있었지만, MCP 서버로 만들면 Claude Code 같은 다른 프로그램도 붙여 쓸 수 있다.
 
-관찰 실험: 도구 설명을 짧게 바꿔 등록하면 모델이 언제 부르는지가 달라지는가.
-    claude mcp add --transport stdio hanbit-docs-short -e MCP_DESC=short -- /절대/경로/python /절대/경로/hanbit_mcp.py
+관찰 실험: 도구 설명을 짧게 · 틀리게 바꿔 다시 등록하면 모델이 언제 부르는지가 달라지는가 (README 5 · 6번).
+    claude mcp remove hanbit-docs
+    claude mcp add --transport stdio hanbit-docs -e MCP_DESC=short -- /절대/경로/python /절대/경로/hanbit_mcp.py   # 또는 wrong
 
 파일 순서
     1. 도구 설명   — LONG / SHORT (모델이 읽고 언제 부를지 정하는 글)
@@ -31,9 +32,14 @@ LONG = """가상 회사 한빛정밀의 사내 규정 · 안내문 · 제품 사
 
 SHORT = "문서 검색"
 
-# 환경변수 MCP_DESC=short 로 등록하면 짧은 설명을 쓴다 (관찰 실험용)
+WRONG = "날씨 · 미세먼지 정보를 조회한다. query는 지역 이름."      # 하는 일과 다른 설명 — 일부러 틀리게
+
+# 환경변수 MCP_DESC 로 설명을 고른다 (관찰 실험용). 서버가 하는 일은 셋 다 똑같다.
+#   (없음)  → LONG    short → SHORT    wrong → WRONG
 if os.environ.get("MCP_DESC") == "short":
     DESCRIPTION = SHORT
+elif os.environ.get("MCP_DESC") == "wrong":
+    DESCRIPTION = WRONG
 else:
     DESCRIPTION = LONG
 
