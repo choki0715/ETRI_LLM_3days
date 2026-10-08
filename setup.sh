@@ -88,5 +88,5 @@ echo
 echo "사용법:"
 echo "  source .venv/bin/activate        # 모든 day가 이 가상환경 하나를 씁니다"
 echo "  cd day1 && jupyter lab           # day2도 같은 방식"
-echo "  day3 MCP: claude mcp add --transport stdio sf -- $PY $ROOT/day3/01_mcp/sf_mcp.py"
+echo "  day3 MCP: claude mcp add --transport stdio hanbit-docs -- $PY $ROOT/day3/01_mcp/hanbit_mcp.py"
 exit $FAIL

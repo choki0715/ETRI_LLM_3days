@@ -11,7 +11,7 @@ command -v claude >/dev/null && ok "Claude Code $(claude --version 2>/dev/null |
 command -v git >/dev/null && ok "git $(git --version | awk '{print $3}')" || bad "git 없음" "sudo apt install -y git"
 git config user.name >/dev/null && ok "git 사용자 이름 설정됨" || bad "git 사용자 이름 없음" 'git config --global user.name "이름"; git config --global user.email "메일"'
 command -v python3 >/dev/null && ok "python3 $(python3 -c 'import sys;print(sys.version.split()[0])')" || bad "python3 없음" "sudo apt install -y python3 python3-pip"
-python3 -c "from mcp.server.mcpserver import MCPServer" 2>/dev/null && ok "mcp 2.x 패키지" || bad "mcp 2.x 없음 (블록 1 — 1.x면 sf_mcp.py가 안 뜬다)" 'pip install -U "mcp>=2"   (Ubuntu 시스템 파이썬이면 --break-system-packages 또는 venv)'
+python3 -c "from mcp.server.mcpserver import MCPServer" 2>/dev/null && ok "mcp 2.x 패키지" || bad "mcp 2.x 없음 (1세션 — 1.x면 hanbit_mcp.py가 안 뜬다)" 'pip install -U "mcp>=2"   (Ubuntu 시스템 파이썬이면 --break-system-packages 또는 venv)'
 python3 -c "import playwright" 2>/dev/null && ok "playwright (선택 · 자동 플레이 테스트)" || echo "  – playwright 없음 — 선택 사항: pip install playwright && python3 -m playwright install chromium"
 if git ls-remote https://github.com/choki0715/sf-harness >/dev/null 2>&1; then ok "github.com/choki0715/sf-harness 접근"; else bad "sf-harness 저장소에 닿지 않음" "네트워크 · 프록시 확인"; fi
 case "$(uname -s)" in
