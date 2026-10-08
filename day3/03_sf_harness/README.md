@@ -5,12 +5,26 @@ Claude Code라는 하네스 위에 얹는 하네스 — **사실은 스크립트
 
 | 실습 | 시간 | 할 일 |
 |---|---|---|
+| 0 Claude Code 설치 | 전날 | sf-harness는 Claude Code 플러그인이라 Claude Code가 먼저 있어야 한다 |
 | 1 설치 · LLM 없이 먼저 | 20분 | 플러그인 설치, 스크립트만으로 사실을 뽑아 본다 |
 | 2 한 바퀴 · 사람이 결정 | 25분 | `/sf-harness:run` 결과를 기대표와 비교, 터미널에서 승인 |
 | 3 훅에 시켜 본다 | 15분 | 에이전트에게 시키면 막히고, 내가 치면 실행되는가 |
 | 4 내 손으로 하나 고친다 | 50분 | 과제 가 · 나 · 다 중 하나 → 테스트 통과까지 |
 
 명령은 [day3 README의 경로 약속](../README.md#경로-약속)을 먼저 쳐 둔 터미널에서 실행합니다. 실습 1에서 정하는 `$SF`(sf-harness 스크립트 폴더)는 **실습 4에서 내 clone으로 바꿉니다.**
+
+## 실습 0 · Claude Code 설치 (먼저)
+
+sf-harness는 Claude Code에 얹는 **플러그인**입니다. 플러그인을 받으려면 Claude Code가 먼저 깔려 있고 로그인돼 있어야 합니다. 전날 밤 준비([day3 README](../README.md#0-준비--전날-밤))에서 했다면 확인만 하고 넘어갑니다.
+
+```bash
+curl -fsSL https://claude.ai/install.sh | bash        # Windows는 WSL(Ubuntu) 안에서
+# 새 터미널을 열고
+claude --version                                       # 버전이 찍히면 설치됨
+claude                                                 # 처음 실행하면 로그인 — 안내대로 계정을 연결한다
+```
+
+채팅창이 뜨면 `/exit`로 닫거나 그대로 실습 1로 갑니다. 설치 방법은 바뀔 수 있으니 강의 전에 공식 문서(code.claude.com/docs)로 한 번 더 확인합니다.
 
 ## 실습 1 · 설치
 
