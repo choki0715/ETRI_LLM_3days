@@ -10,7 +10,7 @@ sf-harness의 `sf-signals`를 MCP 도구 하나로 감싼 **sf-plant** 서버를
 ## 1. 준비 (3분)
 
 ```bash
-pip install mcp                       # Ubuntu 시스템 파이썬이면 --break-system-packages 또는 venv
+pip install "mcp>=2"                  # 2.x API(MCPServer)를 쓴다. Ubuntu 시스템 파이썬이면 --break-system-packages 또는 venv
 
 # 가상 플랜트 — sf-harness를 clone해서 스크립트만 쓴다 (플러그인 설치는 오후에)
 git clone https://github.com/choki0715/sf-harness ~/sf-harness

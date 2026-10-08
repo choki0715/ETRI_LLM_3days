@@ -5,5 +5,5 @@ pytest
 sentence-transformers>=3.0
 chromadb>=1.0
 numpy
-mcp
+mcp>=2.0              # day3 01_mcp — sf_mcp.py는 2.x API(MCPServer)를 쓴다
 playwright

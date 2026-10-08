@@ -32,7 +32,7 @@ def test_keyword_exact_code():
 
 
 def test_index_search():
-    idx = rag.Index.build(chunks(), name="t1")
+    idx = rag.Index(chunks(), name="t1")
     hits = idx.search("연차 사용 절차", 3)
     assert len(hits) == 3 and hits[0].value <= hits[-1].value
     assert any(h.source == "01_일반업무규칙.txt" for h in hits)
@@ -71,7 +71,6 @@ def test_qa_file():
 def test_tools_and_loop_mock():
     assert loop.calculator(3, 120000, "mul") == 360000
     assert "0으로" in str(loop.calculator(1, 0, "div"))
-    loop.SEARCH_INDEX = rag.Index.build(chunks(), name="t2")
     assert "출처=" in loop.search("숙박비")
     ans, trace = loop.run("서울 3박 숙박비 150000 합계", verbose=False)
     assert loop.tools_used(trace) == ["search", "calculator"]

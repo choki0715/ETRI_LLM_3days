@@ -3,6 +3,8 @@
 
     my-decide [--dir 경로] approve C-001 --reason "..."
     my-decide [--dir 경로] reject  C-005 --reason "영수증 없음"
+
+decisions.csv 에 한 줄을 더한다: 청구번호,결정,사유,결정자(로그인 이름)
 """
 import argparse
 import csv
@@ -12,16 +14,19 @@ import sys
 
 
 def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--dir", default="/tmp/my-demo")
-    ap.add_argument("action", choices=["approve", "reject"])
-    ap.add_argument("claim")
-    ap.add_argument("--reason", required=True)
-    a = ap.parse_args()
-    path = os.path.join(os.path.abspath(a.dir), "decisions.csv")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dir", default="/tmp/my-demo")                 # 연습 데이터 폴더
+    parser.add_argument("action", choices=["approve", "reject"])         # 승인 또는 반려
+    parser.add_argument("claim")                                         # 청구번호, 예: C-005
+    parser.add_argument("--reason", required=True)                       # 사유 — 꼭 적는다
+    args = parser.parse_args()
+
+    path = os.path.join(os.path.abspath(args.dir), "decisions.csv")
     with open(path, "a", newline="", encoding="utf-8") as f:
-        csv.writer(f).writerow([a.claim, a.action, a.reason, getpass.getuser()])
-    print(f"DECIDED: {a.claim} {a.action}")
+        writer = csv.writer(f)
+        writer.writerow([args.claim, args.action, args.reason, getpass.getuser()])
+
+    print(f"DECIDED: {args.claim} {args.action}")
     return 0
 
 
