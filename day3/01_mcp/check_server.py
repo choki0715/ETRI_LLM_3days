@@ -10,7 +10,7 @@
     python check_server.py "회의실 예약 횟수"         # 내 질문으로
 
 Claude Code가 MCP 서버에 붙을 때 하는 일을 그대로 따라 한다.
-    1. 서버 주소(http://127.0.0.1:8765/mcp)로 접속한다
+    1. 서버 주소(http://127.0.0.1:9800/mcp)로 접속한다
     2. 인사(initialize) — 서버 이름을 받는다
     3. 도구 목록(list_tools) — 이름 · 설명 · 입력 스키마를 받는다. 모델이 보는 것이 이것이다
     4. 도구 호출(call_tool) — search_docs를 한 번 불러 결과를 받는다
@@ -21,7 +21,7 @@ import sys
 from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 
-SERVER_URL = "http://127.0.0.1:8765/mcp"       # hanbit_mcp.py의 HOST · PORT와 같아야 한다
+SERVER_URL = "http://127.0.0.1:9800/mcp"       # hanbit_mcp.py의 HOST · PORT와 같아야 한다
 
 
 async def main(query):

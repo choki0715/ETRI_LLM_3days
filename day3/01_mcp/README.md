@@ -6,7 +6,7 @@
 
 | 파일 | 역할 | 하는 일 |
 |---|---|---|
-| `hanbit_mcp.py` | **서버** | 도구 `search_docs(query)` 하나를 `http://127.0.0.1:8765/mcp`에 열어 두고 기다린다. 불릴 때마다 화면에 `[호출]` 기록을 찍는다 |
+| `hanbit_mcp.py` | **서버** | 도구 `search_docs(query)` 하나를 `http://127.0.0.1:9800/mcp`에 열어 두고 기다린다. 불릴 때마다 화면에 `[호출]` 기록을 찍는다 |
 | `check_server.py` | **클라이언트** | Claude Code 대신 서버에 접속해 도구 목록을 보고 한 번 부른다 |
 
 **서버와 클라이언트를 따로 띄웁니다.** 터미널을 두 개 엽니다.
@@ -69,7 +69,7 @@ $PY hanbit_mcp.py
 **화면에 나오는 것**
 
 ```
-hanbit-docs 서버 — http://127.0.0.1:8765/mcp
+hanbit-docs 서버 — http://127.0.0.1:9800/mcp
   도구: search_docs   설명: 긴 설명 (가상 회사 한빛정밀의 사내 규정 · 안내문 · 제품 사양서 20편에서 질…)
   자료: 문단 85개 · 멈추려면 Ctrl+C
 ```
@@ -77,7 +77,7 @@ hanbit-docs 서버 — http://127.0.0.1:8765/mcp
 여기서 멈춘 것처럼 보이는 게 정상입니다 — **접속을 기다리는 중**입니다. 이 터미널은 끝날 때까지 켜 두고, 앞으로 도구가 불리면 여기에 `[호출]` 줄이 찍힙니다.
 
 **안 되면**
-- `address already in use` — 다른 프로그램이 8765를 쓰고 있다. `hanbit_mcp.py`의 `PORT`와 `check_server.py`의 `SERVER_URL`을 같은 다른 번호(예: 8766)로 바꾼다
+- `address already in use` — 다른 프로그램이 9800번을 쓰고 있다. `hanbit_mcp.py`의 `PORT`와 `check_server.py`의 `SERVER_URL`을 같은 다른 번호(예: 9801)로 바꾼다
 - `No module named 'mcp.server.mcpserver'` — mcp가 1.x다 → `pip install -U "mcp>=2"`
 
 ## 3. 터미널 2 — 클라이언트로 접속해 보기 (2분)
@@ -126,17 +126,17 @@ $PY check_server.py
 
 ```bash
 mkdir -p ~/mcp-lab && cd ~/mcp-lab
-claude mcp add --transport http hanbit-docs http://127.0.0.1:8765/mcp
+claude mcp add --transport http hanbit-docs http://127.0.0.1:9800/mcp
 claude mcp list
 ```
 
 **화면에 나오는 것**
 
 ```
-Added HTTP MCP server hanbit-docs with URL: http://127.0.0.1:8765/mcp to local config
+Added HTTP MCP server hanbit-docs with URL: http://127.0.0.1:9800/mcp to local config
 
 Checking MCP server health…
-hanbit-docs: http://127.0.0.1:8765/mcp (HTTP) - ✔ Connected
+hanbit-docs: http://127.0.0.1:9800/mcp (HTTP) - ✔ Connected
 ```
 
 **확인** — `hanbit-docs … ✔ Connected`가 보이는가. 다른 서버가 함께 보여도 괜찮다.
@@ -248,4 +248,4 @@ claude mcp list                        # hanbit-docs가 없어야 한다
 - 5번 회의실 행과 6 · 7번(짧은 · 틀린 설명)은 서버를 stdio 방식으로 띄우던 이전 판에서, 같은 모델 · 같은 설명 글로 확인한 결과입니다. 연결 방식만 다르고 모델이 받는 도구 이름 · 설명 · 스키마는 같습니다.
 - 모두 hanbit-docs 하나만 켠 상태(`--strict-mcp-config`)에서 질문마다 1~2번씩 돌린 것이라, 수업 중에는 다르게 나올 수 있습니다 — 특히 수강생의 기본 모델이 다르면 더 그렇습니다. 강의 전에 한 번 돌려 봅니다.
 - 같은 실험에서 입력 설명을 "영어 단어 하나로(English keyword only)"로 틀리게 적은 판도 돌려 봤습니다 — 모델이 정의대로 `hotel` · `lodging` · `meeting`으로 5~8번 검색하다가 못 찾자 한국어로 바꿔 찾았습니다. 시간이 남으면 이야기 거리로 씁니다 (Day 2 05 노트북 4절과 같은 현상).
-- 실습 PC에서 8765번이 이미 쓰이고 있으면 `hanbit_mcp.py`의 `PORT`와 `check_server.py`의 `SERVER_URL`을 함께 바꿉니다. 강사 PC에서는 8000번을 다른 프로그램이 쓰고 있어서 8765를 골랐습니다.
+- 실습 PC에서 9800번이 이미 쓰이고 있으면 `hanbit_mcp.py`의 `PORT`와 `check_server.py`의 `SERVER_URL`을 함께 바꿉니다. 강사 PC에서는 8000번을 다른 프로그램이 쓰고 있어서 9800번을 씁니다.

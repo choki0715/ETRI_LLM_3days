@@ -3,11 +3,11 @@
 서버는 혼자 따로 띄워 두고, 클라이언트(check_server.py · Claude Code)가 주소로 접속한다.
 
     # 터미널 1 — 서버를 띄워 둔다 (Ctrl+C로 멈춘다)
-    python hanbit_mcp.py                         → http://127.0.0.1:8765/mcp 에서 기다린다
+    python hanbit_mcp.py                         → http://127.0.0.1:9800/mcp 에서 기다린다
 
     # 터미널 2 — 클라이언트가 접속한다
     python check_server.py
-    claude mcp add --transport http hanbit-docs http://127.0.0.1:8765/mcp
+    claude mcp add --transport http hanbit-docs http://127.0.0.1:9800/mcp
 
 어제(Day 2) loop.py의 search 도구를 MCP 서버로 떼어 낸 것이다.
 loop.py에서는 우리 루프만 그 도구를 쓸 수 있었지만, MCP 서버로 만들면 Claude Code 같은 다른 프로그램도 붙여 쓸 수 있다.
@@ -28,7 +28,7 @@ from pathlib import Path
 from mcp.server.mcpserver import MCPServer
 
 HOST = "127.0.0.1"          # 이 컴퓨터에서만 접속할 수 있다
-PORT = 8765                 # 다른 프로그램이 8765를 쓰고 있으면 바꾼다 (check_server.py 주소도 같이)
+PORT = 9800                 # 다른 프로그램이 9800번을 쓰고 있으면 바꾼다 (check_server.py 주소도 같이)
 HERE = Path(__file__).resolve().parent
 KB_FOLDER = HERE.parent.parent / "day2" / "data" / "kb"       # Day 2 한빛정밀 사내 자료 20편
 
