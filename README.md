@@ -104,7 +104,7 @@ source .venv/bin/activate
 (cd day1 && python -m pytest tests -q)                    # 14 passed
 (cd day2 && EMBED=hash python -m pytest tests -q)         # 8 passed
 bash day3/04_my_harness/template/test/run-tests.sh        # 26개 통과
-(cd day3/01_mcp && python check_server.py)                # 결과: OK
+(cd day3/01_mcp && python check_server.py)                # 결과: OK (다른 터미널에서 python hanbit_mcp.py로 서버를 먼저 띄운다)
 ```
 
 day1 · day2 · day3 테스트는 API 키 없이 돕니다. 노트북은 실제 API로 처음부터 끝까지 돌려 오류 없이 끝나는 것을 확인했습니다. 다만 모델 출력은 실행마다 달라서, 노트북에 적힌 관찰(예: 도구 설명을 잘못 적으면 실패한다)이 수업 중 같은 모양으로 재현되지 않을 수 있습니다. 강의 전에 한 번씩 돌려 봅니다.

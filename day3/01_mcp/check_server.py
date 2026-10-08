@@ -1,31 +1,32 @@
-"""Claude Code 없이 hanbit_mcp.py가 제대로 도는지 확인한다 — MCP 클라이언트로 붙어 도구 목록을 보고 한 번 부른다.
+"""hanbit-docs MCP 서버에 접속하는 클라이언트 — Claude Code 대신 도구 목록을 보고 한 번 부른다.
 
-    python3 check_server.py                          # 기본 질문으로
-    python3 check_server.py "회의실 예약 횟수"         # 내 질문으로
-    MCP_DESC=short python3 check_server.py           # 짧은 설명판
+서버(hanbit_mcp.py)를 다른 터미널에서 먼저 띄워 둔다.
+
+    # 터미널 1
+    python hanbit_mcp.py
+
+    # 터미널 2
+    python check_server.py                          # 기본 질문으로
+    python check_server.py "회의실 예약 횟수"         # 내 질문으로
 
 Claude Code가 MCP 서버에 붙을 때 하는 일을 그대로 따라 한다.
-    1. 서버 프로그램(hanbit_mcp.py)을 띄우고 표준 입출력으로 연결한다
+    1. 서버 주소(http://127.0.0.1:8765/mcp)로 접속한다
     2. 인사(initialize) — 서버 이름을 받는다
     3. 도구 목록(list_tools) — 이름 · 설명 · 입력 스키마를 받는다. 모델이 보는 것이 이것이다
     4. 도구 호출(call_tool) — search_docs를 한 번 불러 결과를 받는다
 """
 import asyncio
-import os
 import sys
 
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
+from mcp import ClientSession
+from mcp.client.streamable_http import streamable_http_client
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+SERVER_URL = "http://127.0.0.1:8765/mcp"       # hanbit_mcp.py의 HOST · PORT와 같아야 한다
 
 
 async def main(query):
-    # 1. 서버 프로그램을 띄울 명령 — 지금 쓰는 파이썬으로 hanbit_mcp.py를 실행한다
-    server_file = os.path.join(HERE, "hanbit_mcp.py")
-    params = StdioServerParameters(command=sys.executable, args=[server_file], env=dict(os.environ))
-
-    async with stdio_client(params) as (read_stream, write_stream):
+    # 1. 서버에 접속한다 — 서버는 이미 떠 있어야 한다
+    async with streamable_http_client(SERVER_URL) as (read_stream, write_stream):
         async with ClientSession(read_stream, write_stream) as session:
             # 2. 인사
             info = await session.initialize()
@@ -61,7 +62,16 @@ if __name__ == "__main__":
         query = sys.argv[1]
     else:
         query = "서울 출장 숙박비 한도"
-    ok = asyncio.run(main(query))
+
+    try:
+        ok = asyncio.run(main(query))
+    except Exception as error:
+        # 서버가 안 떠 있으면 접속 단계에서 실패한다
+        print(f"서버에 접속하지 못했다 — {SERVER_URL}")
+        print("다른 터미널에서 서버를 먼저 띄운다:  python hanbit_mcp.py")
+        print(f"(오류: {type(error).__name__})")
+        sys.exit(1)
+
     if ok:
         sys.exit(0)
     sys.exit(1)
