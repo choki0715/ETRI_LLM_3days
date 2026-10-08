@@ -13,3 +13,6 @@ day2/db/
 
 # 02 노트북이 단계별로 생성하는 프롬프트 (학생 산출물)
 day1/prompts/prompt_[1-6].txt
+
+# Claude Code 로컬 작업 규칙 (공개 저장소에 올리지 않음)
+CLAUDE.md
