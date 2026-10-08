@@ -13,6 +13,7 @@ Day 2 `loop.py`의 두 도구 — 한빛정밀 사내 자료 검색(`search_docs
 | `check_server.py` | 클라이언트 (사람이 고름) | 서버에 접속해 도구 목록을 보고, 내가 넣는 검색어 · 계산식으로 도구를 부른다 — 모델 없음 |
 | `mcp_client.py` | **클라이언트 (1)** | 서버의 도구를 모델(Claude API)에게 주고, **모델이 고른 도구**를 서버에 실행시킨다 — Day 2 `loop.py`와 같은 루프 |
 | Claude Code | **클라이언트 (2)** | `claude mcp add --transport http …`로 같은 서버를 붙인다 |
+| `mcp_only_hanbit.json` | Claude Code 설정 | hanbit-docs **하나만** 켜고 Claude Code를 띄울 때 쓴다 (6번) |
 
 **서버와 클라이언트를 따로 띄웁니다.** 터미널을 두 개 엽니다.
 
@@ -97,7 +98,7 @@ hanbit-docs 서버 — http://127.0.0.1:9800/mcp
 여기서 멈춘 것처럼 보이는 게 정상입니다 — **접속을 기다리는 중**입니다. 이 터미널은 끝날 때까지 켜 두고, 앞으로 도구가 불리면 여기에 `[호출]` 줄이 찍힙니다.
 
 **안 되면**
-- `address already in use` — 다른 프로그램이 9800번을 쓰고 있다. `hanbit_mcp.py`의 `PORT`와 `check_server.py`의 `SERVER_URL`을 같은 다른 번호(예: 9801)로 바꾼다
+- `address already in use` — 다른 프로그램이 9800번을 쓰고 있다. `hanbit_mcp.py`의 `PORT`, `check_server.py` · `mcp_client.py`의 `SERVER_URL`, `mcp_only_hanbit.json`의 `url`을 같은 다른 번호(예: 9801)로 바꾼다
 - `No module named 'mcp.server.mcpserver'` — mcp가 1.x다 → `pip install -U "mcp>=2"`
 
 # (1) 내 파이썬 클라이언트로 쓰기
@@ -277,7 +278,18 @@ hanbit-docs: http://127.0.0.1:9800/mcp (HTTP) - ✔ Connected
 cd ~/mcp-lab && claude
 ```
 
-먼저 채팅창에 `/mcp`를 쳐서 `hanbit-docs`가 connected인지 봅니다. 그다음 하나씩:
+먼저 채팅창에 `/mcp`를 쳐서 `hanbit-docs`가 connected인지 봅니다.
+
+**`/mcp`에 내가 등록하지 않은 서버도 보이면** — `claude.ai Google Drive` · `claude.ai Claude Docs` · `Gmail` 같은 것은 claude.ai 계정에 연결해 둔 커넥터가 Claude Code에 따라 들어온 것입니다. 모델에게는 이 도구들도 함께 보입니다. 이 실습은 **hanbit-docs 하나만 켜고** 합니다 — `/exit` 후 이렇게 다시 띄웁니다.
+
+```bash
+cd ~/mcp-lab
+claude --strict-mcp-config --mcp-config $DAY3/01_mcp/mcp_only_hanbit.json
+```
+
+`--strict-mcp-config`는 **`--mcp-config` 파일에 적은 서버만** 켜고 나머지(계정 커넥터 · 5번에서 `mcp add`로 등록한 것 포함)는 모두 끕니다. `mcp_only_hanbit.json`에는 hanbit-docs 주소 하나만 적혀 있습니다. 다시 `/mcp`로 hanbit-docs 하나만 보이는지 확인합니다. 왜 끄는지는 8번에서 드러납니다.
+
+그다음 하나씩:
 
 ```
 서울로 출장 가면 숙박비는 하루 얼마까지 나와?
@@ -313,7 +325,7 @@ Claude Code에 등록한 주소는 그대로 두고, **서버만 다른 설명�
    ```bash
    MCP_DESC=short $PY hanbit_mcp.py          # 둘째 줄에 "설명: 짧은 설명 — 문서 검색…"
    ```
-3. 터미널 2: `claude`로 다시 띄운다 — 접속할 때 새 설명을 받아 온다
+3. 터미널 2: Claude Code를 다시 띄운다 — 접속할 때 새 설명을 받아 온다 (6번에서 hanbit-docs만 켜고 띄웠다면 같은 명령으로: `claude --strict-mcp-config --mcp-config $DAY3/01_mcp/mcp_only_hanbit.json`)
 
 같은 세 질문을 다시 하고 "짧은 설명" 칸에 적습니다.
 
@@ -328,7 +340,7 @@ Claude Code에 등록한 주소는 그대로 두고, **서버만 다른 설명�
    ```bash
    MCP_DESC=wrong $PY hanbit_mcp.py          # 둘째 줄에 "설명: 틀린 설명 — 날씨 · 미세먼지…"
    ```
-3. 터미널 2: `claude`
+3. 터미널 2: Claude Code를 다시 띄운다 (hanbit-docs만 켜고: `claude --strict-mcp-config --mcp-config $DAY3/01_mcp/mcp_only_hanbit.json`)
 
 이번 search_docs 설명은 `날씨 · 미세먼지 정보를 조회한다. query는 지역 이름.`입니다. 서버는 여전히 사내 자료를 찾습니다 — **바뀐 것은 설명 한 줄뿐**입니다 (계산기 설명은 그대로). 같은 세 질문을 다시 하고 "틀린 설명" 칸에 적습니다. 터미널 1에 `[호출]`이 찍히는지도 봅니다.
 
@@ -337,6 +349,8 @@ Claude Code에 등록한 주소는 그대로 두고, **서버만 다른 설명�
 > 연결된 `search_docs` 도구는 이름과 달리 날씨·미세먼지 조회용이라, 규정 검색에는 쓸 수 없어서 호출하지 않았습니다.
 
 그리고 "확인하지 못했다"고 답했습니다. 도구는 답을 갖고 있었는데, 설명이 틀려서 쓰이지 못한 것입니다.
+
+**계정 커넥터를 켠 채로 하면** — 강사가 Google Drive 커넥터를 켠 채로 같은 실험을 했을 때, 모델은 hanbit-docs를 버리고 **Google Drive에서 "출장 · 숙박" 문서를 검색하려 했습니다** (4번 중 4번). 수업 중이면 내 Drive를 검색해도 되느냐는 허락 창이 뜹니다 — 허락하지 않습니다. 모델은 쓸 만한 도구를 찾아 **다른 서버로 옮겨 간다**는 것을 보여 주지만, 비교 실험을 깨끗하게 하려고 6번에서 hanbit-docs만 켜는 것입니다. (설명이 맞을 때는 커넥터가 켜져 있어도 3번 모두 hanbit-docs만 썼습니다.)
 
 | 질문 | 긴 설명 — 불렀나 | 짧은 설명 — 불렀나 | 틀린 설명 — 불렀나 | 답에 출처를 밝혔나 |
 |---|---|---|---|---|
@@ -365,6 +379,7 @@ claude mcp list                        # hanbit-docs가 없어야 한다
 - 6번 표의 숙박비 · 점심 메뉴는 이 HTTP 서버를 Claude Code 2.1.266에 등록하고 `claude -p`(대화창 없는 모드), 모델 Sonnet 5.5로 확인했습니다 — 숙박비 질문에서 터미널 1에 `[호출] search_docs(query='국내 출장 숙박비 1일 한도 서울')`이 찍혔고, 점심 메뉴에는 아무것도 안 찍혔습니다. 회의실 행은 아래 이전 판(stdio)에서 확인한 결과입니다.
 - 6번 회의실 행과 7 · 8번(짧은 · 틀린 설명)은 서버를 stdio 방식으로 띄우던 이전 판에서, 같은 모델 · 같은 설명 글로 확인한 결과입니다. 연결 방식만 다르고 모델이 받는 도구 이름 · 설명 · 스키마는 같습니다.
 - 계산기(`calculator`)는 나중에 더했습니다. 더한 뒤 4번(`mcp_client.py`, Haiku 4.5)과 6번 무게 질문(`claude -p`, Sonnet 5.5, 2번)을 다시 돌려 위 결과를 얻었습니다 — 둘 다 search → calculator 순서로 29 kg. 6번의 다른 세 질문과 7 · 8번은 계산기를 더하기 전(search_docs 하나뿐인 서버)의 결과입니다.
+- 계정 커넥터(Claude Docs · Google Drive)를 켠 채로도 돌려 봤습니다 — 긴 설명이면 숙박비 · 회의실 · 무게 3질문 모두 hanbit-docs만 썼고, 틀린 설명이면 숙박비 · 회의실 2질문 × 2번 모두 Google Drive `search_files`를 부르려 했습니다 (허락하지 않아 실제로 검색되지는 않음). 그래서 6번에서 `mcp_only_hanbit.json`으로 hanbit-docs만 켜게 했습니다.
 - 모두 hanbit-docs 하나만 켠 상태(`--strict-mcp-config`)에서 질문마다 1~2번씩 돌린 것이라, 수업 중에는 다르게 나올 수 있습니다 — 특히 수강생의 기본 모델이 다르면 더 그렇습니다. 강의 전에 한 번 돌려 봅니다.
 - 같은 실험에서 입력 설명을 "영어 단어 하나로(English keyword only)"로 틀리게 적은 판도 돌려 봤습니다 — 모델이 정의대로 `hotel` · `lodging` · `meeting`으로 5~8번 검색하다가 못 찾자 한국어로 바꿔 찾았습니다. 시간이 남으면 이야기 거리로 씁니다 (Day 2 05 노트북 4절과 같은 현상).
-- 실습 PC에서 9800번이 이미 쓰이고 있으면 `hanbit_mcp.py`의 `PORT`와 `check_server.py`의 `SERVER_URL`을 함께 바꿉니다. 강사 PC에서는 8000번을 다른 프로그램이 쓰고 있어서 9800번을 씁니다.
+- 실습 PC에서 9800번이 이미 쓰이고 있으면 `hanbit_mcp.py`의 `PORT`, `check_server.py` · `mcp_client.py`의 `SERVER_URL`, `mcp_only_hanbit.json`의 `url`을 함께 바꿉니다. 강사 PC에서는 8000번을 다른 프로그램이 쓰고 있어서 9800번을 씁니다.
