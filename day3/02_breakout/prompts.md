@@ -15,7 +15,20 @@
 git add -A && git commit -m "패들 이동"      # 잘 돌면 바로 저장
 ```
 
+## 되돌리는 법
+
+| 명령 | 언제 |
+|---|---|
+| `git diff` | 방금 무엇이 바뀌었나 |
+| `git restore .` | 커밋 이후 바뀐 것을 버린다 — 마지막으로 잘 돌던 상태로 |
+| `git log --oneline` | 저장 지점 목록 |
+| `git revert <커밋>` | 이미 커밋한 변경을 되돌리는 새 커밋 |
+
+Claude Code 안에서는 Esc 두 번으로 체크포인트를 되감을 수 있습니다. 파일 변경만 되돌리고, git을 대신하지는 않습니다.
+
 ## 한 번에 시키면 안 되나? (10분 비교 실험)
+
+1~6회차를 끝낸 뒤에 합니다 — 한 문장씩 만든 게임(`~/breakout`, 이하 B)이 있어야 비교할 수 있습니다.
 
 ```bash
 mkdir ~/breakout-once && cd ~/breakout-once && git init && claude
@@ -23,7 +36,8 @@ mkdir ~/breakout-once && cd ~/breakout-once && git init && claude
 
 1. `아타리 벽돌깨기 게임 만들어줘` → 돌려 본다 → `git add -A && git commit -m "한 번에"`
 2. `패들 모서리에서 공이 파고드는 것만 고쳐줘`
-3. `git diff --stat` — 몇 줄이 바뀌었나. B(한 문장씩)의 같은 수정과 비교한다
+3. `git diff --stat` — 몇 줄이 바뀌었나
+4. B(`~/breakout`)에도 같은 문장을 시키고 `git diff --stat`으로 바뀐 줄 수를 비교한다
 
 만드는 것은 한 번에 될 수 있습니다. 차이는 **고칠 때** 납니다.
 
@@ -47,17 +61,6 @@ mkdir ~/breakout-once && cd ~/breakout-once && git init && claude
 (재현) ______________ 하면 (현상) ______________ 돼. (기대) ______________ 해야 해.
 (범위) ______________ 부분만 고치고, 다른 기능은 건드리지 마.
 ```
-
-## 되돌리는 법
-
-| 명령 | 언제 |
-|---|---|
-| `git diff` | 방금 무엇이 바뀌었나 |
-| `git restore .` | 커밋 이후 바뀐 것을 버린다 — 마지막으로 잘 돌던 상태로 |
-| `git log --oneline` | 저장 지점 목록 |
-| `git revert <커밋>` | 이미 커밋한 변경을 되돌리는 새 커밋 |
-
-Claude Code 안에서는 Esc 두 번으로 체크포인트를 되감을 수 있습니다. 파일 변경만 되돌리고, git을 대신하지는 않습니다.
 
 ## 먼저 끝난 사람에게 — 여전히 한 문장씩
 

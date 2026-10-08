@@ -10,6 +10,8 @@ Claude Code라는 하네스 위에 얹는 하네스 — **사실은 스크립트
 | 3 훅에 시켜 본다 | 15분 | 에이전트에게 시키면 막히고, 내가 치면 실행되는가 |
 | 4 내 손으로 하나 고친다 | 50분 | 과제 가 · 나 · 다 중 하나 → 테스트 통과까지 |
 
+명령은 [day3 README의 경로 약속](../README.md#경로-약속)을 먼저 쳐 둔 터미널에서 실행합니다. 실습 1에서 정하는 `$SF`(sf-harness 스크립트 폴더)는 **실습 4에서 내 clone으로 바꿉니다.**
+
 ## 실습 1 · 설치
 
 Claude Code 채팅창에서 (어느 폴더에서 띄웠든 상관없다):
@@ -89,8 +91,11 @@ CNC-02 정지시켜
 git clone https://github.com/choki0715/sf-harness ~/sf-harness-mine
 cd ~/sf-harness-mine && git checkout -b my-change
 ./test/run-tests.sh                       # 고치기 전 — 159개 통과 확인
+export SF=~/sf-harness-mine/sf-harness/bin   # 이제부터 $SF는 내가 고치는 스크립트 — 과제 안내의 $SF도 이것
 claude --plugin-dir sf-harness            # 설치한 플러그인은 /plugin 에서 꺼 둔다
 ```
+
+`$SF`를 바꾸지 않으면 실습 1의 설치된 원본 플러그인 스크립트가 돌아서, 고친 결과가 안 보입니다(과제 다의 `HALF_CHANGE_PCT`가 안 나온다).
 
 | 과제 | 고칠 곳 | 확인 | 안내 |
 |---|---|---|---|
@@ -99,4 +104,9 @@ claude --plugin-dir sf-harness            # 설치한 플러그인은 /plugin �
 | 다 · 새 사실을 하나 센다 | `bin/sf-signals` + `skills/analyze` + 테스트 | 새 KEY가 출력되고 소견에 쓰이는가 | `tasks/다_새사실.md` |
 
 **고치는 것도 바이브 코딩으로** — 직접 짜지 말고 Claude Code에게 시킵니다. 끝나면 `./test/run-tests.sh`가 모두 통과해야 합니다.
-강사 풀이는 `solutions/*.patch` (`git apply solutions/나_정비이력_삭제금지.patch`) — 모두 원본 저장소(0.2.0)에 그대로 적용되고 테스트가 통과하는 것을 확인했습니다.
+
+---
+
+## 강사 메모
+
+강사 풀이는 `solutions/*.patch` — 내 clone에서 `git apply $DAY3/03_sf_harness/solutions/나_정비이력_삭제금지.patch`. 셋 모두 원본 저장소(0.2.0)에 그대로 적용되고 테스트가 통과하는 것을 확인했습니다 (가: 159 · 나: 166 · 다: 161).

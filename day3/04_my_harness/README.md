@@ -1,5 +1,13 @@
 # 실습 · 내 하네스 한 장 (4세션 · 15분 + 과제)
 
+| 순서 | 할 일 |
+|---|---|
+| 1 | 내 업무로 한 장 채우기 (15분) |
+| 2 | 동작하는 뼈대를 돌려 보기 |
+| 3 | (과제) 뼈대를 내 업무로 바꾸기 |
+
+명령은 [day3 README의 경로 약속](../README.md#경로-약속)(`$DAY3`)을 먼저 쳐 둔 터미널에서 실행합니다.
+
 ## 1. 한 장 채우기 (15분)
 
 내 업무 하나를 골라 칸을 채웁니다. 두세 명이 발표합니다.
@@ -22,7 +30,7 @@
 
 대부분 "사람이 설 자리"를 정하는 데서 막힙니다. 그게 정상이고, 그게 하네스 설계의 시작입니다.
 
-## 2. 뼈대에서 시작하기 — `template/`
+## 2. 동작하는 뼈대를 돌려 보기 — `template/`
 
 sf-harness를 줄인 **동작하는 뼈대**입니다. 예시 업무는 *출장비 정산 검토* — Day 2 한빛정밀 출장비 규정(숙박 12만원 · 서울 · 제주 15만원 · 일비 3만원 · 정산 7일)을 그대로 씁니다.
 
@@ -41,7 +49,7 @@ template/
 ```
 
 ```bash
-cp -r ~/day3/04_my_harness/template ~/my-harness && cd ~/my-harness && git init
+cp -r $DAY3/04_my_harness/template ~/my-harness && cd ~/my-harness && git init
 ./test/run-tests.sh                                   # 26개 통과
 ./my-harness/bin/my-demo-data                         # /tmp/my-demo
 claude --plugin-dir my-harness
