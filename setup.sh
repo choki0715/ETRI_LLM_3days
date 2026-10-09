@@ -76,6 +76,32 @@ else
 fi
 command -v claude >/dev/null && ok "Claude Code $(claude --version 2>/dev/null | head -1)" \
   || bad "Claude Code 없음" "curl -fsSL https://claude.ai/install.sh | bash  (새 터미널에서 'claude' 실행해 로그인)"
+# npm 전역 설치(npm install -g @anthropic-ai/claude-code)가 남아 있으면 네이티브 설치와 버전이 따로 놀 수 있다
+# (예: /usr/bin/claude 2.1.266 vs ~/.local/bin/claude 2.1.295) — 이 저장소는 npm 전역 설치를 쓰지 않는다
+if command -v npm >/dev/null 2>&1 && npm list -g @anthropic-ai/claude-code >/dev/null 2>&1; then
+  bad "npm 전역 설치된 Claude Code가 남아 있음 — 네이티브 설치와 버전이 어긋날 수 있다" \
+      "npm -g uninstall @anthropic-ai/claude-code  (이후 새 터미널에서 claude --version으로 확인)"
+fi
+# VS Code — 없으면 공식 Microsoft apt 저장소를 등록하고 설치한다 (sudo 비밀번호를 물을 수 있다)
+if command -v code >/dev/null 2>&1; then
+  ok "VS Code $(code --version 2>/dev/null | head -1)"
+elif command -v apt-get >/dev/null 2>&1; then
+  info "VS Code 설치 중 (공식 Microsoft apt 저장소 등록, sudo 비밀번호를 물을 수 있다)"
+  (
+    set -e
+    curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /tmp/packages.microsoft.gpg
+    sudo install -D -o root -g root -m 644 /tmp/packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
+    echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" \
+      | sudo tee /etc/apt/sources.list.d/vscode.list >/dev/null
+    rm -f /tmp/packages.microsoft.gpg
+    sudo apt-get update -qq
+    sudo apt-get install -y code
+  ) >/tmp/vscode_install.log 2>&1 \
+    && ok "VS Code 설치됨 ($(code --version 2>/dev/null | head -1))" \
+    || bad "VS Code 설치 실패 (선택 사항)" "cat /tmp/vscode_install.log 로 원인 확인 · 수동 설치: https://code.visualstudio.com/download"
+else
+  bad "VS Code 없음 — apt가 없어 자동 설치 불가 (선택 사항)" "https://code.visualstudio.com/download 에서 직접 설치"
+fi
 command -v git >/dev/null && ok "git $(git --version | awk '{print $3}')" || bad "git 없음" "sudo apt install -y git"
 git config user.name >/dev/null 2>&1 && ok "git 사용자 이름 설정됨" \
   || bad "git 사용자 이름 없음" 'git config --global user.name "이름"; git config --global user.email "메일"'

@@ -18,6 +18,7 @@
 | 2 | 1~6회차 — 한 문장 → 플레이 → 체크리스트 → 커밋 | 50분 |
 | 3 | 한 번에 시키기 비교 실험 | 10분 |
 | 4 | 실패 하나를 "현상 · 기대 · 재현 · 범위" 지시로 고치기 | 10분 |
+| 5 | (선택) 나중에 GitHub에 올리기 | — |
 
 ## 1. 프로젝트 세우기 (10분)
 
@@ -69,6 +70,28 @@ $PY $DAY3/02_breakout/playtest.py ~/breakout/index.html     # 화면을 playtest
 체크리스트에서 실패한 항목 하나를 골라 "현상 · 기대 · 재현 · 범위" 네 칸을 채운 지시로 고칩니다 — [prompts.md의 틀](prompts.md#실패를-다음-지시로-바꾸기--네-가지를-넣는다). 고친 뒤 체크리스트 8개를 다시 합니다.
 
 먼저 끝난 사람은 [prompts.md의 확장 과제](prompts.md#먼저-끝난-사람에게--여전히-한-문장씩)로 — 여전히 한 문장씩.
+
+## 5. (선택) 나중에 GitHub에 올리기
+
+지금까지는 `~/breakout`에 로컬 git만 있습니다. 회차를 다 끝내고 GitHub에도 올리고 싶으면 그때 한 번만 합니다 — 회차마다 올릴 필요는 없습니다.
+
+1. **github.com에서 빈 저장소를 만든다** — 로그인 후 우측 상단 **+** → **New repository**. 이름만 정하고 **README · .gitignore · license는 체크하지 않습니다**(로컬에 이미 커밋이 있어서 겹치면 충돌이 납니다).
+2. **로컬 저장소에 원격 주소를 연결하고 올린다**
+
+```bash
+cd ~/breakout
+git remote add origin https://github.com/<내-아이디>/<저장소-이름>.git
+git branch -M main                 # 기본 브랜치 이름을 main으로 (이미 main이면 생략)
+git push -u origin main
+```
+
+`-u`는 이번 한 번만 필요합니다 — 이후로는 `git push`만 쳐도 됩니다.
+
+**로그인을 물으면** — GitHub는 비밀번호 대신 **개인 액세스 토큰(PAT)**을 씁니다. github.com → **Settings → Developer settings → Personal access tokens → Tokens (classic)** → **Generate new token**에서 `repo` 권한으로 하나 만들고, 아이디 입력 후 비밀번호 자리에 그 토큰을 붙여 넣습니다. 매번 묻지 않게 하려면:
+
+```bash
+git config --global credential.helper store      # 한 번 입력하면 다음부터 저장된 토큰을 쓴다
+```
 
 ---
 

@@ -123,10 +123,13 @@ def search(query, k=3):
 
 
 # ================================================================ 4. 도구 — 모델이 부르면 우리 코드가 실행한다
+# mcp 하나가 서버 전체다. 도구를 담는 빈 그릇(이름 → 함수 딕셔너리)이 이 한 줄에서 생긴다.
+# 서버는 하나만 만들고, @mcp.tool을 아래처럼 여러 번 써서 그 그릇에 도구를 하나씩 등록한다.
+# 클라이언트가 접속하면 이 그릇에 든 것을 전부 보여 주고(list_tools), 이름으로 골라 실행한다(call_tool).
 mcp = MCPServer("hanbit-docs", log_level="WARNING")      # 접속 로그는 줄이고, 아래 [호출] 기록만 보이게
 
 
-@mcp.tool(description=DESCRIPTION)
+@mcp.tool(description=DESCRIPTION)                        # 그릇에 1번째 도구 등록: "search_docs" → 이 함수
 def search_docs(query: str) -> str:
     """도구 이름은 함수 이름(search_docs), 입력 스키마는 인자와 타입 힌트(query: str)에서 만들어진다."""
     hits = search(query, 3)
@@ -155,7 +158,7 @@ CALCULATOR_DESCRIPTION = ("두 숫자의 사칙연산을 정확히 계산한다.
                           "op는 add 더하기 · sub 빼기 · mul 곱하기 · div 나누기.")
 
 
-@mcp.tool(description=CALCULATOR_DESCRIPTION)
+@mcp.tool(description=CALCULATOR_DESCRIPTION)             # 같은 그릇에 2번째 도구 등록: "calculator" → 이 함수
 def calculator(a: float, b: float, op: Literal["add", "sub", "mul", "div"]) -> str:
     """Day 2 loop.py의 calculator와 같다. Literal[...]은 op에 넣을 수 있는 값을 넷으로 정한다 — 스키마의 enum이 된다."""
     if op == "add":
