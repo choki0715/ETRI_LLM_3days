@@ -5,7 +5,7 @@
 
     python -m src.grade prompts/prompt_4.txt
     python -m src.grade prompts/prompt_4.txt prompts/prompt_5.txt        # 나란히 비교
-    python -m src.grade solutions/prompts/prompt_6.txt --model claude-haiku-4-5-20251001
+    python -m src.grade solutions/prompts/prompt_6.txt --model claude-haiku-5-5
     python -m src.grade prompts/prompt_6.txt --all-models                 # 모델 셋으로 비교
 
 프롬프트 파일 규칙

@@ -41,7 +41,7 @@ source .venv/bin/activate     # 모든 day가 이 가상환경 하나를 쓴다
 
 ```bash
 ANTHROPIC_API_KEY=sk-ant-...           # 강사가 나눠 준 키
-MODEL=claude-haiku-4-5-20251001        # 기본 실습 모델 (빠르고 쌈)
+MODEL=claude-haiku-5-5                 # 기본 실습 모델 (빠르고 쌈)
 MODEL_ADVANCED=claude-sonnet-5-5       # 고급 모델이 필요한 문항에서만
 LLM_MOCK=0                             # 1이면 API를 부르지 않고 흐름만 확인
 EMBED=st                               # day2 임베딩 — st(한국어 모델) · hash(테스트용 간이 벡터)

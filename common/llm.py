@@ -14,18 +14,20 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
-MODEL = os.getenv("MODEL", "claude-haiku-4-5-20251001")
+MODEL = os.getenv("MODEL", "claude-haiku-5-5")
 # 고급 모델이 필요한 문항에서만 model=llm.MODEL_ADVANCED 로 지정해 씁니다
 MODEL_ADVANCED = os.getenv("MODEL_ADVANCED", "claude-sonnet-5-5")
 MOCK = os.getenv("LLM_MOCK", "0") == "1"
 
 # grade.py --all-models 로 비교할 때 쓰는 목록 — 강의 당일 쓸 수 있는 이름으로 확인해 바꿉니다
-MODELS = ["claude-haiku-4-5-20251001", "claude-sonnet-5-5", "claude-opus-5-5"]
+MODELS = ["claude-haiku-5-5", "claude-sonnet-5-5", "claude-opus-5-5"]
 
 # 100만 토큰당 (입력 $, 출력 $) — Claude API 기준가. 강의 당일 요금표로 다시 확인합니다.
 # 비어 있는 모델은 비용을 계산하지 않고 "단가 미입력"으로 표시합니다.
+# Haiku 5.5는 프롬프트가 10만 토큰을 넘으면 단가가 (0.5, 2.5)로 오르지만, cost()는 그 구간을 계산하지 않습니다.
+# 이 과정에서 가장 긴 프롬프트(day2 01 노트북의 자료 20편 전부)도 1만 토큰이 안 되므로 아래 값만 씁니다.
 PRICES: dict[str, tuple[float, float] | None] = {
-    "claude-haiku-4-5-20251001": (1.0, 5.0),
+    "claude-haiku-5-5": (0.1, 0.5),
     "claude-sonnet-5-5": (2.0, 10.0),
     "claude-opus-5-5": (4.0, 20.0),
 }
@@ -59,16 +61,22 @@ class Result:
 
 def call(user: str, system: str | None = None, *, model: str | None = None,
          max_tokens: int = 1000, history: list[dict] | None = None,
-         stop_sequences: list[str] | None = None, effort: str | None = None,
-         temperature: float | None = None) -> Result:
+         effort: str | None = None, temperature: float | None = None,
+         thinking: dict | None = None) -> Result:
     """모델을 한 번 부른다.
 
     user     — 이번에 보내는 user 메시지
     system   — 매번 같은 역할 · 규칙 · 형식 (없어도 된다)
     history  — 앞서 주고받은 messages. 모델은 기억하지 않으므로 이어 가려면 직접 넘긴다
     effort   — "low" · "medium" · "high" · "xhigh" · "max". 생각을 얼마나 들일지 (지원 모델만)
-    temperature — 최신 모델은 받지 않는다(400 오류). 예전 모델 실험용으로만 남겨 두었다.
+    temperature — 이 과정의 모델(Haiku 5.5 · Sonnet 5.5 · Opus 5.5)은 받지 않는다(400 오류).
+                  01 노트북에서 거부되는 것을 보여 주는 데만 쓴다.
                   SDK 1.x에는 이 인자가 없어서 extra_body로 보낸다.
+    thinking — 답 전에 생각할지. 안 주면 모델 기본값(Haiku 5.5 · Sonnet 5.5는 켜짐, Haiku 4.5는 꺼짐).
+               넣을 값은 모델마다 다르다. 맞지 않으면 400 오류가 나고, 오류 메시지가 쓸 값을 알려 준다.
+                 Haiku 5.5   끄기 {"type": "disabled"}
+                 Sonnet 5.5  끄기 {"type": "between_tools"}
+                 Haiku 4.5   켜기 {"type": "enabled", "budget_tokens": 1024}
     """
     model = model or MODEL
     messages = list(history or []) + [{"role": "user", "content": user}]
@@ -81,10 +89,10 @@ def call(user: str, system: str | None = None, *, model: str | None = None,
         kwargs["output_config"] = {"effort": effort}
     if temperature is not None:
         kwargs["extra_body"] = {"temperature": temperature}
+    if thinking is not None:
+        kwargs["thinking"] = thinking
     if system:
         kwargs["system"] = system
-    if stop_sequences:
-        kwargs["stop_sequences"] = stop_sequences
 
     t0 = time.perf_counter()
     r = client().messages.create(**kwargs)
@@ -113,7 +121,7 @@ def cost(model: str, input_tokens: int, output_tokens: int) -> float | None:
 
 
 def fmt_cost(c: float | None) -> str:
-    return "단가 미입력" if c is None else f"${c:.4f}"
+    return "단가 미입력" if c is None else f"${c:.5f}"
 
 
 def render(template: str, **values: str) -> str:

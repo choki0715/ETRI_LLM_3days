@@ -51,7 +51,7 @@ async def ask(session, tools, question):
 
     for attempt in range(MAX_ATTEMPTS):
         # ① 모델을 부른다 — 서버에서 받아 온 도구 정의를 함께 보낸다
-        response = llm.client().messages.create(model=llm.MODEL, max_tokens=800,
+        response = llm.client().messages.create(model=llm.MODEL, max_tokens=2000,
                                                 tools=tools, messages=messages)
 
         # ② 도구 요청이 없으면 답을 다 낸 것

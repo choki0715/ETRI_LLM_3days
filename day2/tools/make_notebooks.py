@@ -107,7 +107,7 @@ print("제16조" + part_16)'''),
     C(r'''def measure(context, q):
     """자료(context)와 질문(q)을 한 프롬프트로 묶어 모델에 보낸다."""
     prompt = f"<자료>\n{context}\n</자료>\n\n<질문>{q}</질문>"
-    return llm.call(prompt, max_tokens=300)
+    return llm.call(prompt, max_tokens=1500)
 
 table = []
 for item in QUESTIONS:
@@ -162,7 +162,7 @@ nb02 = [
     C(r'''history = []          # 지금까지 주고받은 대화 — 매번 통째로 다시 보낸다
 questions = ["연차 신청 절차를 알려줘", "반차는 어떻게 나뉘어?", "경조휴가 기준은?", "병가는 며칠까지야?", "방금 말한 것들을 표로 정리해줘"]
 for q in questions:
-    r = llm.call(q, history=history, max_tokens=300)
+    r = llm.call(q, history=history, max_tokens=1500)
     history.append({"role": "user", "content": q})
     history.append({"role": "assistant", "content": r.text})
     print(f"{q:<22} 입력 {r.input_tokens:>5} 토큰")'''),
@@ -174,7 +174,7 @@ old_lines = []
 for m in old:
     old_lines.append(f"{m['role']}: {m['content']}")
 old_text = "\n".join(old_lines)
-summary = llm.call("다음 대화에서 나중에 필요할 사실만 다섯 줄 이내로 요약해 주세요.\n\n" + old_text, max_tokens=300).text
+summary = llm.call("다음 대화에서 나중에 필요할 사실만 다섯 줄 이내로 요약해 주세요.\n\n" + old_text, max_tokens=1500).text
 
 # 줄인 이력 = 요약 한 덩어리 + 최근 대화
 short = []
@@ -184,8 +184,8 @@ for m in recent:
     short.append(m)
 
 q = "지금까지 이야기한 휴가 종류를 한 줄씩 다시 말해줘"
-a = llm.call(q, history=history, max_tokens=300)     # 전체 이력으로
-b = llm.call(q, history=short, max_tokens=300)       # 줄인 이력으로
+a = llm.call(q, history=history, max_tokens=1500)     # 전체 이력으로
+b = llm.call(q, history=short, max_tokens=1500)       # 줄인 이력으로
 print(f"전체 이력  입력 {a.input_tokens} 토큰")
 print(f"요약 + 최근  입력 {b.input_tokens} 토큰")
 print()
@@ -197,7 +197,7 @@ print(b.text)'''),
 notes.write_text("# 작업 메모\n- 사용자는 생산관리팀 소속\n- 답은 표로 받기를 원함\n- 연차 규정은 일반 업무 규칙 제13~15조\n", encoding="utf-8")
 
 memo = notes.read_text(encoding="utf-8")
-r = llm.call("반차 규정을 알려줘", system="<메모>\n" + memo + "</메모>", max_tokens=300)
+r = llm.call("반차 규정을 알려줘", system="<메모>\n" + memo + "</메모>", max_tokens=1500)
 print(r.text)'''),
     M("""## 3. 실습 · 내 업무에 전략 붙이기 (10분)
 각자 업무 두 가지를 적고 전략을 고릅니다. 두세 명이 발표합니다.
@@ -255,7 +255,7 @@ for h in hits:
     C(r'''prompt = rag.make_prompt(Q0, hits)
 print("④ LLM에 들어가는 최종 입력 — 모델이 보는 것은 이것이 전부입니다")
 print(prompt)'''),
-    C(r'''r = llm.call(prompt, max_tokens=300)
+    C(r'''r = llm.call(prompt, max_tokens=1500)
 print("⑤ 최종 결과")
 print(r.text)'''),
     M("""이 다섯 셀이 RAG의 전부입니다. 아래부터는 단계마다 하나씩 더 깊이 봅니다."""),

@@ -148,7 +148,8 @@ def run(question, tools=TOOLS, system=SYSTEM, max_attempts=5, model=None, verbos
     모델의 응답(response)은 이렇게 생겼다.
         response.stop_reason   "tool_use"  → 도구를 불러 달라는 요청이 들어 있다
                                "end_turn"  → 할 말을 다 했다 (최종 답)
-        response.content       블록의 리스트. 블록은 두 종류다.
+        response.content       블록의 리스트. 블록은 세 종류다.
+            생각 블록       block.type == "thinking"   (모델이 답 전에 한 생각 — 내용은 비어 있지만 출력 토큰은 쓴다)
             글 블록         block.type == "text"
                             block.text  = "숙박비 한도를 찾아보겠습니다."
             도구 요청 블록   block.type == "tool_use"
@@ -218,7 +219,7 @@ def show_messages(messages):
 
     messages 안의 content는 세 가지 모양이다.
         글자                           — 사용자 질문
-        모델 응답 블록의 리스트         — 모델의 말(text) · 도구 요청(tool_use)
+        모델 응답 블록의 리스트         — 모델의 생각(thinking) · 모델의 말(text) · 도구 요청(tool_use)
         {"type": "tool_result", ...}  — 우리가 붙인 도구 결과 (dict의 리스트)
     """
     number = 0
@@ -232,6 +233,8 @@ def show_messages(messages):
                 if isinstance(part, dict):
                     preview = part["content"][:100].replace("\n", " ")
                     print(f"[{number}] {role:<9} 도구 결과: {preview}")
+                elif part.type == "thinking":
+                    print(f"[{number}] {role:<9} 모델의 생각: (내용은 보이지 않음)")
                 elif part.type == "text":
                     print(f"[{number}] {role:<9} 모델의 말: {part.text.strip()[:80]}")
                 elif part.type == "tool_use":
@@ -255,8 +258,8 @@ def call_model(model, tools, messages, system):
 
     client = llm.client()
     if system is None:
-        return client.messages.create(model=model, max_tokens=800, tools=tools, messages=messages)
-    return client.messages.create(model=model, max_tokens=800, tools=tools, messages=messages, system=system)
+        return client.messages.create(model=model, max_tokens=2000, tools=tools, messages=messages)
+    return client.messages.create(model=model, max_tokens=2000, tools=tools, messages=messages, system=system)
 
 
 # ---------------------------------------------------------------- 모의 모드 (pytest용 — 수업에서는 읽지 않아도 된다)

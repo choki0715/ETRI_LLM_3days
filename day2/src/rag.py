@@ -355,7 +355,7 @@ def make_prompt(q, hits):
     return f"{RULES}\n\n{all_blocks}\n\n<질문>{q}</질문>"
 
 
-def ask(q, idx, k=3, model=None, max_tokens=600):
+def ask(q, idx, k=3, model=None, max_tokens=1500):
     """검색 → 주입 → 호출. (답, 찾은 자료 목록)을 돌려준다."""
     global LAST_PROMPT
     hits = idx.search(q, k)

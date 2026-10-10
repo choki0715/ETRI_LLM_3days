@@ -5,14 +5,14 @@
 {"id": 5, "group": "평범", "input": "노트북 화면이 갑자기 파랗게 변하면서 꺼졌습니다. 지금 발표 준비 중이라 급합니다.", "check": {"category": "IT", "urgency": "높음"}}
 {"id": 6, "group": "평범", "input": "회의실 화이트보드 마카가 다 말랐습니다. 새 것으로 바꿔주세요.", "check": {"category": "비품", "urgency": "낮음"}}
 {"id": 7, "group": "평범", "input": "사무실 에어컨에서 이상한 소리가 납니다. 확인 부탁드립니다.", "check": {"category": "시설", "urgency": "보통"}}
-{"id": 8, "group": "평범", "input": "이번 달 급여명세서가 메일로 안 왔습니다. 확인해주시겠어요?", "check": {"category": "인사", "urgency": "보통"}}
+{"id": 8, "group": "평범", "input": "이번 달 급여명세서가 메일로 안 왔습니다. 확인해주시겠어요?", "check": {"category": "인사", "urgency": "높음"}}
 {"id": 9, "group": "평범", "input": "신입사원 책상에 의자가 없습니다. 하나 더 구매 부탁드립니다.", "check": {"category": "비품", "urgency": "보통"}}
 {"id": 10, "group": "평범", "input": "주차장 출입 차단기가 고장나서 차가 못 들어오고 있습니다. 지금 바로 확인 부탁드립니다.", "check": {"category": "시설", "urgency": "높음", "has": "주차장"}}
 {"id": 11, "group": "경계", "input": "급한 건 아닌데, 혹시 가능하시면 오늘 중으로 모니터 하나만 더 받을 수 있을까요?", "check": {"category": "비품", "urgency": "낮음"}}
 {"id": 12, "group": "경계", "input": "복도 바닥에 물이 계속 새고 있어서 미끄러질 뻔했습니다. 시간 날 때 한번 봐주세요.", "check": {"category": "시설", "urgency": "높음"}}
 {"id": 13, "group": "경계", "input": "모니터 화면에 자꾸 줄이 생깁니다. 고장인 것 같습니다.", "check": {"category": "IT", "urgency": "보통"}}
-{"id": 14, "group": "경계", "input": "회의실 예약 시스템이 너무 느려서 정말 답답합니다!! 어떻게 좀 해주세요.", "check": {"category": "IT", "urgency": "보통"}}
-{"id": 15, "group": "경계", "input": "출산휴가 중인데 이번 달 급여가 평소보다 적게 들어온 것 같아요.", "check": {"category": "인사", "urgency": "보통"}}
+{"id": 14, "group": "경계", "input": "회의실 예약 시스템이 너무 느려서 정말 답답합니다!! 어떻게 좀 해주세요.", "check": {"category": "시설", "urgency": "보통"}}
+{"id": 15, "group": "경계", "input": "출산휴가 중인데 이번 달 급여가 평소보다 적게 들어온 것 같아요.", "check": {"category": "인사", "urgency": "높음"}}
 {"id": 16, "group": "기타", "input": "회사 근처에 괜찮은 점심 식당 추천해주실 수 있나요?", "check": {"category": "기타", "urgency": "낮음"}}
 {"id": 17, "group": "기타", "input": "다음 워크숍은 언제쯤 열릴 예정인지 궁금합니다.", "check": {"category": "기타", "urgency": "낮음"}}
 {"id": 18, "group": "기타", "input": "총무팀 내선번호가 몇 번인지 알려주세요.", "check": {"category": "기타", "urgency": "낮음"}}
