@@ -234,15 +234,13 @@ def run(prompt: str, *, model: str | None = None, tests: list[dict] | None = Non
     if model is None:
         model = llm.MODEL
 
-    def grade_one(test):
-        return _grade_single_test(prompt, test, model)
-
     # 문항마다 API를 따로 부르므로, 스레드풀로 동시에 보내 전체 시간을 줄인다.
+    # submit(함수, 인자들…)은 그 함수를 그 인자로 실행해 달라고 맡기는 것이다.
     # futures를 문항 순서대로 담아 두면, 결과를 꺼낼 때도 같은 순서로 나온다.
     futures = []
     with ThreadPoolExecutor(max_workers=max(1, workers)) as executor:
         for test in tests:
-            futures.append(executor.submit(grade_one, test))
+            futures.append(executor.submit(_grade_single_test, prompt, test, model))
         rows = []
         for future in futures:
             rows.append(future.result())
