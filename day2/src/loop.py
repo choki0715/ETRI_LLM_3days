@@ -8,7 +8,7 @@
 
 파일 순서
     1. 도구 함수     — calculator, search (우리 코드가 실제로 실행하는 함수)
-    2. 도구 설명     — TOOLS (모델이 읽고 어떤 도구를 쓸지 고르는 글)
+    2. 도구 설명     — TOOLS_GOOD (모델이 읽고 어떤 도구를 쓸지 고르는 글)
     3. 루프         — run (모델 호출 → 도구 실행 → 결과 전달 을 반복)
     4. 모델 호출     — call_model (모의 모드면 가짜 응답)
 """
@@ -113,7 +113,7 @@ SEARCH_TOOL = {
     },
 }
 
-TOOLS = [CALCULATOR_TOOL, SEARCH_TOOL]
+TOOLS_GOOD = [CALCULATOR_TOOL, SEARCH_TOOL]
 
 # 2단계 '일부러 틀리게'용 — "언제 이 도구를 쓰는지"(description)를 거짓으로 적은 판. 입력 모양(input_schema)은 그대로.
 # 이 도구는 사내 자료를 찾는 것인데, "회사 바깥의 실시간 정보에만 쓴다"고 거짓으로 적었다.
@@ -135,7 +135,7 @@ SYSTEM = ("당신은 한빛정밀 직원의 질문에 답하는 사내 도우미
 LAST_MESSAGES = []     # 마지막 run()의 대화 기록 — 끝난 뒤에도 열어 볼 수 있게 남겨 둔다
 
 
-def run(question, tools=TOOLS, system=SYSTEM, max_attempts=5, model=None, verbose=True):
+def run(question, tools=TOOLS_GOOD, system=SYSTEM, max_attempts=5, model=None, verbose=True):
     """가장 작은 에이전트 = 모델 + 도구 + 루프.
 
     돌려주는 값: (최종 답, trace)
