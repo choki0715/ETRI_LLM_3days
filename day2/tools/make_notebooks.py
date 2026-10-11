@@ -155,50 +155,86 @@ nb02 = [
 - **쓰기** — 알아낸 것을 창 밖(파일)에 적어 두고, 필요할 때만 다시 읽어서 넣는다
 - **나누기** — 일을 서브에이전트에게 나눠, 각자 자기 창에서 처리하고 요약만 돌려받는다
 
-오늘 깊게 하는 것은 *고르기*(3세션)이고, 여기서는 **줄이기·쓰기**를 작게 맛봅니다. *나누기*는 내일(에이전트) 주제라 오늘은 이름만 둡니다."""),
+오늘 깊게 하는 것은 *고르기*(3세션)이고, 여기서는 **줄이기·쓰기**를 작게 맛봅니다. *나누기*는 내일(에이전트) 주제라 오늘은 이름만 둡니다.
+
+**읽는 법** — 실습 셀마다 바로 앞에 **▶ 이 셀에서 할 것**, 바로 뒤에 **✔ 이 셀의 시사점**이 있습니다. 셀을 돌리기 전에 ▶를, 돌린 뒤에 출력과 ✔를 같이 읽습니다."""),
+    M("""**▶ 이 셀에서 할 것** — 준비. 공용 도구 `llm`을 불러오고, 어떤 모델로 부르는지 · 실제 호출인지 모의 모드인지 확인합니다."""),
     C(SETUP),
+    M("""**✔ 이 셀의 시사점**
+- 출력의 모델 이름이 오늘 쓸 모델인지 확인합니다. `실제 호출`이어야 이 노트북의 토큰 수가 의미가 있습니다."""),
     M("""## 1. 줄이기 — 대화가 길어지면
-모델은 기억하지 않으므로, 이어 가려면 이력을 매번 다시 보냅니다. 입력 토큰이 어떻게 늘어나는지 봅니다."""),
+모델은 기억하지 않으므로, 이어 가려면 이력을 매번 다시 보냅니다. 입력 토큰이 어떻게 늘어나는지 봅니다.
+
+**▶ 이 셀에서 할 것** — 휴가 관련 질문 5개를 순서대로 보내면서, 매번 이력(`history`)에 질문과 답을 쌓습니다. 턴마다 입력 토큰 수를 찍습니다."""),
     C(r'''history = []          # 지금까지 주고받은 대화 — 매번 통째로 다시 보낸다
 questions = ["연차 신청 절차를 알려줘", "반차는 어떻게 나뉘어?", "경조휴가 기준은?", "병가는 며칠까지야?", "방금 말한 것들을 표로 정리해줘"]
-for q in questions:
-    r = llm.call(q, history=history, max_tokens=1500)
-    history.append({"role": "user", "content": q})
-    history.append({"role": "assistant", "content": r.text})
-    print(f"{q:<22} 입력 {r.input_tokens:>5} 토큰")'''),
-    M("""**줄이기**: 직전 몇 턴은 그대로 두고, 그 이전은 요약 한 덩어리로 바꿉니다."""),
-    C(r'''old = history[:-4]        # 앞부분 — 요약으로 줄일 것
-recent = history[-4:]     # 마지막 질문 2개와 답 2개 — 그대로 둔다
+for question in questions:
+    result = llm.call(question, history=history, max_tokens=1500)
+    history.append({"role": "user", "content": question})
+    history.append({"role": "assistant", "content": result.text})
+    print(f"{question:<22} 입력 {result.input_tokens:>5} 토큰")'''),
+    M("""**✔ 이 셀의 시사점**
+- 턴이 쌓일수록 입력 토큰이 빠르게 늡니다. 매번 **지금까지 오간 대화 전부**를 다시 보내기 때문입니다(day1 01의 멀티턴과 같은 이유).
+- 다섯 턴 뒤 `history`에는 메시지 10개(질문 5 + 답 5)가 들어 있습니다. 다음 질문을 하나만 더 보내도 이 10개를 전부 다시 냅니다 — 이게 줄여야 하는 이유입니다."""),
+    M("""**줄이기**: 직전 몇 턴은 그대로 두고, 그 이전은 요약 한 덩어리로 바꿉니다.
+
+**▶ 이 셀에서 할 것** — `history`를 앞부분(요약할 곳)과 최근 2턴(그대로 둘 곳)으로 나눕니다. 앞부분을 요약시켜 **요약 + 최근 2턴**으로 줄인 이력(`short_history`)을 만듭니다. 같은 질문을 **전체 이력**과 **줄인 이력** 양쪽으로 보내 입력 토큰과 답을 나란히 봅니다."""),
+    C(r'''old_part = history[:-4]        # 앞부분 — 요약으로 줄일 것
+recent_part = history[-4:]     # 마지막 질문 2개와 답 2개 — 그대로 둔다
 
 old_lines = []
-for m in old:
-    old_lines.append(f"{m['role']}: {m['content']}")
+for message in old_part:
+    old_lines.append(f"{message['role']}: {message['content']}")
 old_text = "\n".join(old_lines)
 summary = llm.call("다음 대화에서 나중에 필요할 사실만 다섯 줄 이내로 요약해 주세요.\n\n" + old_text, max_tokens=1500).text
 
 # 줄인 이력 = 요약 한 덩어리 + 최근 대화
-short = []
-short.append({"role": "user", "content": "<이전 대화 요약>\n" + summary + "\n</이전 대화 요약>"})
-short.append({"role": "assistant", "content": "네, 요약을 참고하겠습니다."})
-for m in recent:
-    short.append(m)
+short_history = []
+short_history.append({"role": "user", "content": "<이전 대화 요약>\n" + summary + "\n</이전 대화 요약>"})
+short_history.append({"role": "assistant", "content": "네, 요약을 참고하겠습니다."})
+for message in recent_part:
+    short_history.append(message)
 
-q = "지금까지 이야기한 휴가 종류를 한 줄씩 다시 말해줘"
-a = llm.call(q, history=history, max_tokens=1500)     # 전체 이력으로
-b = llm.call(q, history=short, max_tokens=1500)       # 줄인 이력으로
-print(f"전체 이력  입력 {a.input_tokens} 토큰")
-print(f"요약 + 최근  입력 {b.input_tokens} 토큰")
+question = "지금까지 이야기한 휴가 종류를 한 줄씩 다시 말해줘"
+answer_full = llm.call(question, history=history, max_tokens=1500)             # 전체 이력으로
+answer_short = llm.call(question, history=short_history, max_tokens=1500)      # 줄인 이력으로
+
+print(f"전체 이력    입력 {answer_full.input_tokens} 토큰")
+print(f"요약 + 최근  입력 {answer_short.input_tokens} 토큰")
 print()
-print(b.text)'''),
+print("--- 전체 이력으로 받은 답 ---")
+print(answer_full.text)
+print()
+print("--- 요약 + 최근으로 받은 답 ---")
+print(answer_short.text)'''),
+    M("""**✔ 이 셀의 시사점**
+- 입력 토큰이 줄어듭니다(강사가 돌렸을 때 3,695 → 2,096 토큰). 요약이 옛 대화 전체를 대신하기 때문입니다.
+- **토큰이 줄었다고 끝이 아닙니다** — 두 답에 같은 휴가 종류(연차 · 오전/오후 반차 · 반반차 · 결혼 · 출산 · 사망 · 병가)가 **빠짐없이** 들어 있는지 눈으로 대조합니다. 하나라도 빠졌다면 요약이 그 사실을 흘린 것이고, 요약 지시("다섯 줄 이내로")를 고쳐야 합니다.
+- 이번처럼 둘 다 같다고 해서 항상 안전한 건 아닙니다. 요약은 모델이 "나중에 필요하다"고 판단한 것만 남기므로, 뒤에 나올 질문이 요약에서 빠진 사실을 물으면 답하지 못합니다."""),
     M("""## 2. 쓰기 — 창 밖에 적어 두고 필요할 때 읽는다
 작업 중 알게 된 것을 파일에 써 두면, 다음 호출(또는 다음 날)에 그 파일만 창에 넣으면 됩니다.
-내일 Claude Code의 `CLAUDE.md`가 바로 이 전략입니다."""),
-    C(r'''notes = Path("results/notes.md")
-notes.write_text("# 작업 메모\n- 사용자는 생산관리팀 소속\n- 답은 표로 받기를 원함\n- 연차 규정은 일반 업무 규칙 제13~15조\n", encoding="utf-8")
+내일 Claude Code의 `CLAUDE.md`가 바로 이 전략입니다.
 
-memo = notes.read_text(encoding="utf-8")
-r = llm.call("반차 규정을 알려줘", system="<메모>\n" + memo + "</메모>", max_tokens=1500)
-print(r.text)'''),
+**▶ 이 셀에서 할 것** — 메모 파일을 만들어 세 가지를 적습니다. 부서 · 원하는 답 형식 · **규정이 있는 위치**(내용은 아님). 이 메모를 system에 넣고 "반차 규정을 알려줘"라고 묻습니다."""),
+    C(r'''notes_path = Path("results/notes.md")
+notes_path.parent.mkdir(exist_ok=True)
+notes_path.write_text(
+    "# 작업 메모\n"
+    "- 사용자는 생산관리팀 소속\n"
+    "- 답은 표로 받기를 원함\n"
+    "- 연차 규정은 일반 업무 규칙 제13~15조\n",
+    encoding="utf-8")
+
+memo = notes_path.read_text(encoding="utf-8")
+result = llm.call("반차 규정을 알려줘", system="<메모>\n" + memo + "</메모>", max_tokens=1500)
+print(result.text)'''),
+    M("""**✔ 이 셀의 시사점** — 메모의 세 줄 중 **어느 것이 실제로 쓰였는지** 답에서 하나씩 확인합니다.
+- "답은 표로" → 지켜졌습니다. 답이 표로 나옵니다.
+- "생산관리팀 소속" → 쓰였습니다. 강사가 돌렸을 때 표에 "생산현장 특이사항(교대근무 때문에 반차 제한)" 줄이 추가로 붙었습니다.
+- "연차 규정은 제13~15조" → **쓰이지 않았습니다.** 모델은 "실제 문구는 확인할 수 없어서 일반적인 기준으로 정리했습니다"라고 밝히고, 원문을 보내 달라고 되묻습니다.
+
+**왜 셋째만 안 통했나:** 앞의 둘은 메모에 **내용**(표로 · 생산관리팀)이 그대로 적혀 있어 모델이 읽고 바로 씁니다. 셋째는 규정이 적힌 **위치**(제13~15조)만 적혀 있고 조문 내용 자체가 없습니다. 메모에 없는 내용을 모델이 지어내 쓰지 않은 것이고, 이건 day2 04(RAG)에서 "자료에 없으면 없다고 답하게" 만드는 것과 같은 동작입니다.
+- **쓰기 전략이 통하려면 내용 자체를 적어 둬야 합니다.** 위치만 적어 두면, 그 위치의 글을 실제로 읽어서 넣는 **고르기**가 따로 필요합니다 — 그래서 오늘 깊게 배우는 게 고르기입니다."""),
     M("""## 3. 실습 · 내 업무에 전략 붙이기 (10분)
 각자 업무 두 가지를 적고 전략을 고릅니다. 두세 명이 발표합니다.
 
