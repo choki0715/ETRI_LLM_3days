@@ -65,25 +65,35 @@ nb01 = [
 
 A가 더 정확하다면 그것도 결과입니다. 중요한 것은 **차이를 숫자로 적어 보는 것**입니다.
 
-> 요즘 모델은 창이 커서(수십만~백만 토큰) "그냥 다 넣으면 되지 않나" 싶을 수 있습니다. 창에 들어간다고 끝이 아닙니다 — ①보낸 토큰만큼 비용·시간이 **창 크기와 무관하게** 그대로 붙고, ②관련 없는 내용이 많을수록 모델이 정답을 놓치는 경우가 보고돼 있습니다("context rot"). 이 둘을 지금 두 조건으로 직접 측정해 봅니다."""),
+> 요즘 모델은 창이 커서(수십만~백만 토큰) "그냥 다 넣으면 되지 않나" 싶을 수 있습니다. 창에 들어간다고 끝이 아닙니다 — ①보낸 토큰만큼 비용·시간이 **창 크기와 무관하게** 그대로 붙고, ②관련 없는 내용이 많을수록 모델이 정답을 놓치는 경우가 보고돼 있습니다("context rot"). 이 둘을 지금 두 조건으로 직접 측정해 봅니다.
+
+**읽는 법** — 실습 셀마다 바로 앞에 **▶ 이 셀에서 할 것**, 바로 뒤에 **✔ 이 셀의 시사점**이 있습니다."""),
+    M("""**▶ 이 셀에서 할 것** — 준비. 공용 도구 `llm`을 불러오고, 어떤 모델로 부르는지 · 실제 호출인지 모의 모드인지 확인합니다."""),
     C(SETUP),
+    M("""**✔ 이 셀의 시사점**
+- 출력의 모델 이름이 오늘 쓸 모델인지, `실제 호출`인지 확인합니다. 이 노트북은 토큰 수 · 시간 · 비용을 **실제로 재는 게 목적**이라 모의 모드로는 의미가 없습니다."""),
     M("""## 1. 창에 들어갈 재료
 가상의 회사 **한빛정밀**의 사내 자료 20편(`data/kb/`)입니다. 전부 합치면 몇 토큰일까요?"""),
-    C(r'''docs = sorted(Path("data/kb").glob("*.txt"))
+    M("""**▶ 이 셀에서 할 것** — 사내 자료 20편을 전부 읽어 글자 수를 찍고, 전부 이어 붙인 글(`ALL`, 조건 A)의 토큰 수를 셉니다."""),
+    C(r'''doc_paths = sorted(Path("data/kb").glob("*.txt"))
 
 parts = []                     # 문서마다 <문서> 태그로 감싼 글
-for p in docs:
-    text = p.read_text(encoding="utf-8")
-    print(f"{p.name:<26} {len(text):>5}자")
-    parts.append(f'<문서 출처="{p.name}">\n{text}\n</문서>')
+for doc_path in doc_paths:
+    text = doc_path.read_text(encoding="utf-8")
+    print(f"{doc_path.name:<26} {len(text):>5}자")
+    parts.append(f'<문서 출처="{doc_path.name}">\n{text}\n</문서>')
 
 ALL = "\n\n".join(parts)       # 20편을 빈 줄로 이어 붙인 하나의 글 = 조건 A
 print(f"\n합계 {len(ALL):,}자 → {llm.count_tokens(ALL):,} 토큰")'''),
+    M("""**✔ 이 셀의 시사점**
+- 20편 합쳐 8,408자가 **8,263토큰**입니다. day1 01에서 본 것처럼 한글은 토큰이 글자 수보다 적게 나올 수도, 많이 나올 수도 있습니다 — 숫자로 직접 재야 압니다.
+- 이 8,263토큰이 **조건 A**(자료 전부)를 쓸 때마다 매번 입력에 들어가는 양입니다. 3절에서 조건 B(관련 부분만)의 토큰 수와 바로 비교합니다."""),
     M("""## 2. 질문 고르기
 답이 **문서 가운데쯤**에 있고, **헷갈리게 하는 비슷한 내용**이 다른 문서에 있는 질문을 고릅니다.
 
 - Q1 경조휴가 — 답은 일반 업무 규칙 29개 조 중 제16조. 복리후생 안내에 *경조금*이 따로 있다
 - Q2 AX-2041 토크 — 이름이 비슷한 AX-2014 사양서가 따로 있다"""),
+    M("""**▶ 이 셀에서 할 것** — 질문 2개를 정하고, 각 질문의 **조건 B**(관련 부분만)를 미리 잘라 둡니다. Q1은 경조휴가 제16조 본문만, Q2는 AX-2041 사양서 한 편만 씁니다."""),
     C(r'''# Q1의 B 조건 = 일반 업무 규칙에서 제16조 부분만 잘라 낸 것
 rules_text = Path("data/kb/01_일반업무규칙.txt").read_text(encoding="utf-8")
 after_16 = rules_text.split("제16조")[1]      # "제16조" 뒤 전부
@@ -102,38 +112,51 @@ QUESTIONS = [
 ]
 print("B 조건에 넣을 부분 (Q1):")
 print("제16조" + part_16)'''),
+    M("""**✔ 이 셀의 시사점**
+- 두 질문 모두 함정이 있습니다. Q1은 다른 문서에 *경조금*이라는 비슷한 말이 있고, Q2는 이름이 비슷한 *AX-2014* 사양서가 따로 있습니다. 조건 A(자료 전부)에서는 이 헷갈리는 문서도 함께 들어갑니다.
+- `part_16`에 찍힌 내용이 정확히 "본인 결혼: 5일"을 담고 있는지 확인합니다 — 이게 조건 B로 보낼 전부입니다."""),
     M("""## 3. A·B 두 조건으로 같은 질문을 보내고 측정한다
 각 질문을 조건 A(자료 전부)·B(관련 부분만)로 각각 한 번씩 보내, 정답 여부 · 응답 시간 · 입력 토큰 · 비용을 표에 기록합니다."""),
-    C(r'''def measure(context, q):
-    """자료(context)와 질문(q)을 한 프롬프트로 묶어 모델에 보낸다."""
-    prompt = f"<자료>\n{context}\n</자료>\n\n<질문>{q}</질문>"
+    M("""**▶ 이 셀에서 할 것** — 질문마다 조건 A(전부)·B(골라서)로 각각 한 번씩 보내, 정답 여부 · 응답 시간 · 입력 토큰 · 비용을 표로 찍습니다."""),
+    C(r'''def measure(context, question):
+    """자료(context)와 질문(question)을 한 프롬프트로 묶어 모델에 보낸다."""
+    prompt = f"<자료>\n{context}\n</자료>\n\n<질문>{question}</질문>"
     return llm.call(prompt, max_tokens=1500)
 
-table = []
+table_rows = []
 for item in QUESTIONS:
     conditions = [("A 전부", ALL), ("B 골라서", item["part"])]
     for name, context in conditions:
-        r = measure(context, item["q"])
-        if item["answer"] in r.text:
-            ok = "○"
+        result = measure(context, item["q"])
+        if item["answer"] in result.text:
+            is_correct = "○"
         else:
-            ok = "×"
-        table.append([item["q"][:18], name, ok, r.seconds, r.input_tokens, llm.fmt_cost(r.cost)])
-        print(f"[{name}] {r.text.strip()[:80]}")
+            is_correct = "×"
+        table_rows.append([item["q"][:18], name, is_correct, result.seconds,
+                            result.input_tokens, llm.fmt_cost(result.cost)])
+        print(f"[{name}] {result.text.strip()[:80]}")
     print()
 
 print(f"{'질문':<20}{'조건':<10}{'정답':<5}{'시간':>7}{'입력 토큰':>10}  비용")
-for q, name, ok, seconds, input_tokens, cost in table:
-    print(f"{q:<20}{name:<10}{ok:<5}{seconds:>6.1f}초{input_tokens:>10,}  {cost}")'''),
+for question, name, is_correct, seconds, input_tokens, cost in table_rows:
+    print(f"{question:<20}{name:<10}{is_correct:<5}{seconds:>6.1f}초{input_tokens:>10,}  {cost}")'''),
+    M("""**✔ 이 셀의 시사점**
+- 입력 토큰이 **A는 8,300대, B는 200~300대**로 20배 넘게 차이 납니다. 비용도 그만큼 차이 납니다(강사가 돌렸을 때 A는 1건 $0.0008대, B는 $0.00004~5).
+- 그런데 **정답은 둘 다 ○**입니다. 토큰을 20배 넘게 더 썼는데 정확도는 똑같습니다 — 많이 넣는 게 더 정확한 게 아니라는 뜻입니다.
+- 위 표를 맨 위 ## 01 제목 밑의 빈 표에 옮겨 적습니다."""),
     M("""## 4. 세 번씩 돌려 본다
 한 번은 우연일 수 있습니다 — 어제 배운 것. A 조건을 세 번 더 돌려 매번 맞는지 봅니다."""),
+    M("""**▶ 이 셀에서 할 것** — 방금 조건 A가 두 질문 모두 맞았는데, 한 번의 결과만으로 안심할 수 없습니다. 조건 A를 **3번 더** 돌려 매번 맞는지 봅니다."""),
     C(r'''for item in QUESTIONS:
     correct = 0
-    for i in range(3):
-        r = measure(ALL, item["q"])
-        if item["answer"] in r.text:
-            correct += 1
+    for attempt in range(3):
+        result = measure(ALL, item["q"])
+        if item["answer"] in result.text:
+            correct = correct + 1
     print(f"A 전부 · {item['q'][:20]} → 3번 중 {correct}번 정답")'''),
+    M("""**✔ 이 셀의 시사점**
+- 강사가 돌렸을 때는 두 질문 모두 3번 중 3번 정답이었습니다. 자료 20편 안에 헷갈리는 내용이 있어도, 이 질문들에서는 조건 A가 안정적으로 맞혔습니다.
+- 이게 "A가 항상 틀린다"는 뜻은 아닙니다 — 오히려 **A도 맞을 수 있다는 것 자체가 결과**입니다. 중요한 건 정답 여부가 아니라, 맞든 틀리든 **토큰과 비용의 차이**입니다. 다음 "관찰 기록"에 그 차이를 적습니다."""),
     M("""## 관찰 기록
 - 입력 토큰은 몇 배 차이 났나:
 - 응답 시간은:
