@@ -743,20 +743,22 @@ for q in TRY:
     M("""**▶ 이 셀에서 할 것** — 4절에서 실패한 질문(`TRY[0]`, 자기계발비 한도) 하나를 골라, **도구 설명만** 원래 문장으로 되돌린 `MY_TOOLS`로 **고치기 전/고친 뒤**를 나란히 돌립니다."""),
     C(r'''MY_SEARCH_TOOL = {
     "name": "search",
-    "description": loop.SEARCH_TOOL["description"],   # ✏️ 이 한 줄만 고쳤다 (원래 좋은 설명으로 되돌림)
-    "input_schema": loop.SEARCH_TOOL_BAD["input_schema"],
+    "description": loop.SEARCH_TOOL["description"],    # ✏️ 이 한 줄만 고쳤다 — 원래 좋은 설명으로 되돌림
+    "input_schema": loop.SEARCH_TOOL["input_schema"],   # 입력 모양은 원래부터 똑같았다 (안 건드림)
 }
 MY_TOOLS = [loop.CALCULATOR_TOOL, MY_SEARCH_TOOL]
-Q = TRY[0]                                                    # ✏️ 4절에서 실패한 질문
 
-print("=" * 70)
-print("[고치기 전]")
+Q = TRY[0]      # ✏️ 4절에서 실패한 질문
+print("질문:", Q)
+print()
+
+print("[고치기 전] 도구 = loop.TOOLS_BAD (용도 설명이 거짓)")
 answer, trace = loop.run(Q, tools=loop.TOOLS_BAD)
 print("→ 최종 답:", answer)
 print("→ 쓴 도구:", loop.tools_used(trace))
+print()
 
-print("=" * 70)
-print("[고친 뒤]")
+print("[고친 뒤] 도구 = MY_TOOLS (설명만 원래대로 되돌림)")
 answer, trace = loop.run(Q, tools=MY_TOOLS)
 print("→ 최종 답:", answer)
 print("→ 쓴 도구:", loop.tools_used(trace))'''),
