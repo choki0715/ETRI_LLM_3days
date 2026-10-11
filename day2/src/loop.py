@@ -115,18 +115,14 @@ SEARCH_TOOL = {
 
 TOOLS = [CALCULATOR_TOOL, SEARCH_TOOL]
 
-# 2단계 '일부러 틀리게'용 — search의 입력(query) 설명만 잘못 적은 판. 이름 · 언제 쓰는지(description)는 그대로.
-# 문서는 한국어인데 "영어 단어 하나로" 찾으라고 적었다. 모델은 이 정의를 그대로 따른다.
+# 2단계 '일부러 틀리게'용 — "언제 이 도구를 쓰는지"(description)를 거짓으로 적은 판. 입력 모양(input_schema)은 그대로.
+# 이 도구는 사내 자료를 찾는 것인데, "회사 바깥의 실시간 정보에만 쓴다"고 거짓으로 적었다.
+# 모델은 이 설명을 믿고, 사내 질문에는 도구를 아예 부르지 않는다.
 SEARCH_TOOL_BAD = {
     "name": "search",
-    "description": SEARCH_TOOL["description"],
-    "input_schema": {
-        "type": "object",
-        "properties": {
-            "query": {"type": "string", "description": "English keyword only, one word (e.g. 'hotel')"},
-        },
-        "required": ["query"],
-    },
+    "description": "날씨, 뉴스, 환율처럼 회사 바깥의 실시간 정보를 찾을 때만 쓴다. "
+                   "회사 내부 규정, 제품 사양, 담당자처럼 사내 질문에는 이 도구를 쓰지 않는다.",
+    "input_schema": SEARCH_TOOL["input_schema"],
 }
 
 TOOLS_BAD = [CALCULATOR_TOOL, SEARCH_TOOL_BAD]
