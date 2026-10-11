@@ -15,7 +15,10 @@ if Path.cwd().name == "notebooks":
     os.chdir("..")          # day 폴더로 이동 — data/ · prompts/ · src/ 가 여기 있다
 
 from common import llm      # 공용 API 도구 (ETRI_LLM_3days/common/llm.py)
-print("모델:", llm.MODEL, "| 모의 모드" if llm.MOCK else "| 실제 호출")'''
+if llm.MOCK:
+    print("모델:", llm.MODEL, "| 모의 모드")
+else:
+    print("모델:", llm.MODEL, "| 실제 호출")'''
 
 
 def nb(cells):
@@ -694,9 +697,6 @@ nb03 = [
 - `run` — 프롬프트 하나로 20문항을 전부 돌려 채점한다
 - `summarize` · `save` · `print_table` · `print_fails` — 결과를 요약하고, 결과표에 저장하고, 표와 실패 목록을 찍는다"""),
     C(SETUP + '''
-import json
-from pathlib import Path
-from collections import Counter
 from src.grade import load_tests, run, check, summarize, save, print_table, print_fails'''),
     M("""**✔ 이 셀의 시사점**
 - 출력의 모델 이름과 `실제 호출`을 확인합니다. 02와 같은 모델이어야 02의 결과와 이어서 비교할 수 있습니다."""),
@@ -721,13 +721,25 @@ from src.grade import load_tests, run, check, summarize, save, print_table, prin
 
 **▶ 이 셀에서 할 것** — 20문항을 읽어 종류별 문항 수를 세고, 종류마다 첫 문항 하나씩 **문의 본문과 통과 조건(`check`)**을 찍습니다. 모델은 부르지 않습니다."""),
     C('''tests = load_tests()
-print("종류별 문항 수:", dict(Counter(t["group"] for t in tests)), "\\n")
 
-# 종류마다 첫 문항 하나씩 — 문의 본문과 통과 조건(check)이 어떻게 적혀 있는지 본다
+# 종류별로 문항이 몇 개인지 센다
+group_counts = {}
+for test in tests:
+    group = test["group"]
+    if group not in group_counts:
+        group_counts[group] = 0
+    group_counts[group] = group_counts[group] + 1
+print("종류별 문항 수:", group_counts)
+print()
+
+# 종류마다 첫 문항 하나씩 — 문의 본문과 정답 조건(check)이 어떻게 적혀 있는지 본다
 for group in ["평범", "경계", "기타"]:
-    t = next(t for t in tests if t["group"] == group)
-    print(f"[{group}] #{t['id']:>2}  {t['input']}")
-    print(f"        check = {t['check']}\\n")'''),
+    for test in tests:
+        if test["group"] == group:
+            print(f"[{group}] #{test['id']}  {test['input']}")
+            print(f"        check = {test['check']}")
+            print()
+            break                  # 이 종류의 첫 문항만 보고 다음 종류로'''),
     M("""**✔ 이 셀의 시사점**
 - 종류별 문항 수가 위 표대로 10 · 7 · 3인지 확인합니다.
 - `check`에 적힌 `category` · `urgency` (· `has`)가 곧 **채점 기준**입니다. 위 표의 설명이 실제 파일에서는 이런 모양으로 적혀 있습니다."""),
@@ -802,26 +814,61 @@ if not P4.exists():
     print("※ prompts/prompt_4.txt 가 없습니다 (02 노트북을 아직 안 돌림). 풀이본 solutions/prompts/prompt_4.txt 로 대신 돌립니다.\\n")
     P4 = Path("solutions/prompts/prompt_4.txt")
 
-passed, fails, rows = run(str(P4), detail=True)
-s1 = summarize(rows, llm.MODEL)
-save(str(P4), llm.MODEL, rows, s1, note="1차 · prompt_4")
-print(f"통과 {passed} / {len(rows)}")
-print(Counter(kind for _, kind in fails))
-print_fails(rows)'''),
+# run()은 세 가지를 돌려준다 — 통과 수 · 실패 목록 [(문항 번호, 실패 유형), …] · 문항별 상세 결과
+passed_4, fails_4, rows_4 = run(str(P4), detail=True)
+summary_4 = summarize(rows_4, llm.MODEL)
+save(str(P4), llm.MODEL, rows_4, summary_4, note="1차 · prompt_4")
+print(f"통과 {passed_4} / {len(rows_4)}")
+
+# 실패를 유형별로 센다
+kind_counts = {}
+for fail in fails_4:
+    kind = fail[1]                 # fail = (문항 번호, 실패 유형)
+    if kind not in kind_counts:
+        kind_counts[kind] = 0
+    kind_counts[kind] = kind_counts[kind] + 1
+print("실패 유형별 개수:", kind_counts)
+
+print_fails(rows_4)'''),
     M("""**✔ 이 셀의 시사점**
 - 02에서 문의 하나로 3/3 통과하던 프롬프트도, 정답이 있는 20문항에서는 틀리는 문항이 나올 수 있습니다. 02의 "통과"는 형식과 보기만 확인한 것이고, **맞게 골랐는지**는 여기서 처음 잽니다.
-- `Counter(...)` 줄에서 실패가 **어느 유형에 몰리는지** 봅니다. 4절에서 고칠 대상이 이 유형입니다.
+- "실패 유형별 개수" 줄에서 실패가 **어느 유형에 몰리는지** 봅니다. 4절에서 고칠 대상이 이 유형입니다.
 - 실패 문항의 **정답**을 보면 이 회사만의 기준이 드러납니다. 강사가 네 번 돌렸을 때 통과는 13~14 / 20이었고, 매번 #2(토너 부족 → 낮음) · #8 · #15 · #19(급여 문제 → 높음)의 긴급도와 #14 · #20(예약 시스템 → 시설)의 카테고리가 틀렸습니다. (한 번은 #9도 틀렸습니다 — 매번 틀리는 문항과 가끔 틀리는 문항은 구분해서 봅니다.) 모델이 일반 상식으로 판단해서 틀린 것이라, 이 회사의 기준을 프롬프트에 **적어 줘야** 고쳐집니다.
 - 실패 목록에서 실패가 어느 **종류**(평범 · 경계 · 기타)에 몰리는지도 봅니다."""),
     M("""### 실패 문항을 직접 연다
 통과 수만 보면 **새로 생긴 실패**를 놓칩니다. 실패 문항의 출력을 열어 유형이 맞는지 사람이 확인합니다.
 (사실 오류는 코드가 카테고리·긴급도 문자열만 비교해 판정합니다 — 애매한 경우엔 사람이 다시 봅니다.)
 
-**▶ 이 셀에서 할 것** — 실패 문항 하나(기본값: 첫 번째 실패)의 판정 · 설명과 **모델 출력 원문**을 찍습니다. ✏️ `FAIL_ID`를 바꿔 다른 문항도 열어 봅니다."""),
-    C('''FAIL_ID = fails[0][0] if fails else 1      # ✏️ 보고 싶은 문항 번호
-row = next(r for r in rows if r["id"] == FAIL_ID)
-print(f"#{row[\'id\']} [{row[\'group\']}] {row[\'kind\']} — {row[\'why\']}\\n")
-print(row["text"][:1200])'''),
+**▶ 이 셀에서 할 것** — 실패 문항 하나(기본값: 첫 번째 실패)를 골라 **문의 · 정답 조건 · 판정 · 모델이 쓴 답 원문**을 찍습니다. ✏️ `FAIL_ID`를 바꿔 다른 문항도 열어 봅니다."""),
+    C('''ROWS_TO_OPEN = rows_4           # ✏️ 어느 채점 결과에서 열지 — 4절 뒤에는 rows_5 · rows_6도 된다
+
+# ✏️ 보고 싶은 문항 번호 — 기본값은 첫 번째로 실패한 문항
+if len(fails_4) > 0:
+    first_fail = fails_4[0]       # (문항 번호, 실패 유형)
+    FAIL_ID = first_fail[0]
+else:
+    FAIL_ID = 1
+
+# 문항 번호로 문항(문의 · 정답 조건)과 채점 결과(판정 · 모델 답)를 찾는다
+for test in tests:
+    if test["id"] == FAIL_ID:
+        chosen_test = test
+for row in ROWS_TO_OPEN:
+    if row["id"] == FAIL_ID:
+        chosen_row = row
+
+if chosen_row["ok"]:
+    verdict = "통과"
+else:
+    verdict = f"{chosen_row['kind']} — {chosen_row['why']}"
+
+print(f"#{FAIL_ID} [{chosen_row['group']}]")
+print("문의      :", chosen_test["input"])
+print("정답 조건 :", chosen_test["check"])
+print("판정      :", verdict)
+print()
+print("모델이 쓴 답 원문:")
+print(chosen_row["text"])'''),
     M("""**✔ 이 셀의 시사점**
 - 판정 설명(예: "긴급도 기대 '낮음', 출력 '보통'")과 모델 출력 원문을 대조해, **판정이 맞는지 사람이 확인합니다.**
 - 모델이 틀린 것인지, 정답(`check`)이 애매한 것인지도 여기서 가립니다. 정답이 애매하면 `tests.jsonl`을 고칠 일이지 프롬프트를 고칠 일이 아닙니다(02의 4절)."""),
@@ -844,17 +891,26 @@ print(row["text"][:1200])'''),
     C('''P5 = "solutions/prompts/prompt_5.txt"      # ✏️ 내 것: "prompts/prompt_5.txt"
 NOTE = "긴급도: 이 회사 기준(급여는 높음 · 소모품 부족은 낮음)을 적음"   # ✏️ 무엇을 바꿨는지 한 줄 — 결과표에 남는다
 
-p2, f2, rows2 = run(P5, detail=True)
-s2 = summarize(rows2, llm.MODEL)
-save(P5, llm.MODEL, rows2, s2, note=NOTE)
-print_table([("prompt_4", llm.MODEL, s1), ("prompt_5", llm.MODEL, s2)])
+passed_5, fails_5, rows_5 = run(P5, detail=True)
+summary_5 = summarize(rows_5, llm.MODEL)
+save(P5, llm.MODEL, rows_5, summary_5, note=NOTE)
+print_table([("prompt_4", llm.MODEL, summary_4), ("prompt_5", llm.MODEL, summary_5)])
 
-before = {r["id"] for r in rows  if r["ok"]}
-after  = {r["id"] for r in rows2 if r["ok"]}
-print("\\n새로 통과:", sorted(after - before), "  새로 실패:", sorted(before - after))'''),
+# 문항마다 prompt_4와 prompt_5의 결과를 나란히 비교한다 (두 결과 모두 1번부터 20번 순서)
+newly_passed = []
+newly_failed = []
+for index in range(len(rows_4)):
+    before = rows_4[index]
+    after = rows_5[index]
+    if not before["ok"] and after["ok"]:
+        newly_passed.append(after["id"])
+    if before["ok"] and not after["ok"]:
+        newly_failed.append(after["id"])
+print()
+print("새로 통과:", newly_passed, "  새로 실패:", newly_failed)'''),
     M("""**✔ 이 셀의 시사점**
 - 고치려던 유형(여기서는 긴급도의 사실 오류)이 줄었는지 표에서 봅니다. 강사가 돌렸을 때는 세 번 모두 18 / 20 — 긴급도 실패가 모두 사라지고 #14 · #20(카테고리)만 남았습니다.
-- 통과 수만 보지 말고 **"새로 실패"**를 봅니다. 하나를 고치면 전에 맞던 문항이 깨질 수 있습니다. 새로 실패한 문항이 있으면 위 셀의 `FAIL_ID`로 열어 원인을 봅니다. (그 문항을 열려면 `row = next(r for r in rows2 ...)`처럼 `rows2`에서 찾습니다.)
+- 통과 수만 보지 말고 **"새로 실패"**를 봅니다. 하나를 고치면 전에 맞던 문항이 깨질 수 있습니다. 새로 실패한 문항이 있으면 위 "실패 문항을 직접 연다" 셀에서 `ROWS_TO_OPEN = rows_5`, `FAIL_ID = 그 번호`로 바꿔 다시 실행해 원인을 봅니다.
 - 통과 수 차이가 1~2개뿐이면 프롬프트 효과가 아니라 흔들림일 수도 있습니다(01 "같은 질문 다섯 번"). 같은 프롬프트를 한 번 더 돌려 보면 가릴 수 있습니다."""),
     M("""### 2차를 한 번 더 → `prompt_6`
 `prompt_5`의 실패 중 가장 많은 유형 하나를 골라 `prompt_6`을 만듭니다. 풀이본 `prompt_6`은 **카테고리 기준(회의실·주차 예약 시스템, 출입카드처럼 총무팀이 관리하는 건물 시스템은 IT가 아니라 시설)**을 더했습니다. 모델은 "시스템"이라는 말만 보고 IT로 분류하지만, 이 회사에서는 총무팀 소관입니다. 02에서 쓴 출입카드 문의도 이 기준에 해당합니다.
@@ -863,11 +919,11 @@ print("\\n새로 통과:", sorted(after - before), "  새로 실패:", sorted(be
     C('''P6 = "solutions/prompts/prompt_6.txt"      # ✏️ 내 것: "prompts/prompt_6.txt"
 NOTE = "카테고리: 총무팀이 관리하는 건물 시스템(예약·출입카드)은 시설"
 
-p3, f3, rows3 = run(P6, detail=True)
-s3 = summarize(rows3, llm.MODEL)
-save(P6, llm.MODEL, rows3, s3, note=NOTE)
-print_table([("prompt_4", llm.MODEL, s1), ("prompt_5", llm.MODEL, s2), ("prompt_6", llm.MODEL, s3)])
-print_fails(rows3)'''),
+passed_6, fails_6, rows_6 = run(P6, detail=True)
+summary_6 = summarize(rows_6, llm.MODEL)
+save(P6, llm.MODEL, rows_6, summary_6, note=NOTE)
+print_table([("prompt_4", llm.MODEL, summary_4), ("prompt_5", llm.MODEL, summary_5), ("prompt_6", llm.MODEL, summary_6)])
+print_fails(rows_6)'''),
     M("""**✔ 이 셀의 시사점**
 - 세 줄을 비교해 **어느 수정이 어느 유형을 줄였는지** 봅니다. 한 번에 하나씩 고쳤기 때문에 이렇게 나눠 볼 수 있습니다.
 - 표 아래에 실패 목록이 찍히지 않았다면 20문항을 모두 통과한 것입니다.
@@ -880,9 +936,12 @@ print_fails(rows3)'''),
 
 **▶ 이 셀에서 할 것** — `results/scoreboard.csv`의 마지막 8줄을 찍습니다. 줄이 아직 적으면 맨 앞에 칸 이름 줄도 함께 보입니다."""),
     C('''import csv
-with open("results/scoreboard.csv", encoding="utf-8-sig") as f:
-    for row in list(csv.reader(f))[-8:]:
-        print(" | ".join(row[:12]))'''),
+with open("results/scoreboard.csv", encoding="utf-8-sig") as scoreboard_file:
+    all_lines = list(csv.reader(scoreboard_file))   # 파일의 모든 줄 — 한 줄이 칸들의 목록
+
+last_lines = all_lines[-8:]                          # 뒤에서 8줄
+for line in last_lines:
+    print(" | ".join(line))'''),
     M("""**✔ 이 셀의 시사점**
 - 방금 돌린 1차(`prompt_4`) · 2차(`prompt_5` · `prompt_6`)가 한 줄씩 쌓여 있습니다. 노트북을 다시 돌리면 그 줄이 또 쌓입니다.
 - 맨 끝 "바꾼 것" 칸에 NOTE가 남아 있어, 숫자만 봐도 어떤 수정의 결과인지 알 수 있습니다. 이 표가 "고쳤다"는 주장의 증거입니다."""),
