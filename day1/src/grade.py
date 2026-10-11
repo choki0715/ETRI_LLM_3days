@@ -13,12 +13,9 @@
 - 파일 맨 위에 '=== system ===' / '=== user ===' 구분선을 두면 system과 user로 나눠 보낸다.
   구분선이 없으면 파일 전체가 user 메시지가 된다.
 """
-from __future__ import annotations
-
 import argparse
 import csv
 import json
-import re
 import sys
 import time
 from datetime import datetime
@@ -62,13 +59,20 @@ def load_tests(path: str | Path = TESTS) -> list[dict]:
 
 
 # ---------------------------------------------------------------- 프롬프트 나누기
+SYSTEM_LINE = "=== system ==="
+USER_LINE = "=== user ==="
+
+
 def split_prompt(prompt: str) -> tuple[str | None, str]:
-    """'=== system ===' / '=== user ===' 구분선으로 나눈다."""
-    match = re.search(r"^===\s*system\s*===\s*$(.*?)^===\s*user\s*===\s*$(.*)", prompt,
-                       flags=re.S | re.M | re.I)
-    if match:
-        return match.group(1).strip(), match.group(2).strip()
-    return None, prompt
+    """'=== system ===' / '=== user ===' 구분선으로 나눈다. 구분선이 없으면 전체가 user."""
+    system_start = prompt.find(SYSTEM_LINE)          # 못 찾으면 -1
+    user_start = prompt.find(USER_LINE)
+    if system_start == -1 or user_start == -1:
+        return None, prompt
+
+    system = prompt[system_start + len(SYSTEM_LINE):user_start].strip()   # 두 구분선 사이
+    user = prompt[user_start + len(USER_LINE):].strip()                   # user 구분선 뒤 전부
+    return system, user
 
 
 def build(prompt: str, document: str) -> tuple[str | None, str]:
@@ -94,9 +98,10 @@ def parse(text: str):
     2) 없으면 출력 전체를 그대로 json.loads 한다 — 앞뒤에 설명이 붙으면 실패
     실패하면 ValueError
     """
-    match = re.search(r"<json>(.*?)</json>", text, flags=re.S)
-    if match:
-        body = match.group(1)
+    start = text.find("<json>")                       # 못 찾으면 -1
+    end = text.find("</json>", start)
+    if start != -1 and end != -1:
+        body = text[start + len("<json>"):end]        # 두 태그 사이만
     else:
         body = text
     body = body.strip()
@@ -104,7 +109,7 @@ def parse(text: str):
     try:
         return json.loads(body)
     except json.JSONDecodeError as error:
-        raise ValueError(f"JSON이 아님: {error.msg} (위치 {error.pos})") from None
+        raise ValueError(f"JSON이 아님: {error.msg} (위치 {error.pos})")
 
 
 def schema_errors(out) -> list[str]:
@@ -115,11 +120,11 @@ def schema_errors(out) -> list[str]:
     errors = []
     category = out.get("카테고리")
     if category not in CATEGORIES:
-        errors.append(f"'카테고리'가 보기 중에 없음: {category!r} (보기: {', '.join(CATEGORIES)})")
+        errors.append(f"'카테고리'가 보기 중에 없음: '{category}' (보기: {', '.join(CATEGORIES)})")
 
     urgency = out.get("긴급도")
     if urgency not in URGENCY:
-        errors.append(f"'긴급도'가 보기 중에 없음: {urgency!r} (보기: {', '.join(URGENCY)})")
+        errors.append(f"'긴급도'가 보기 중에 없음: '{urgency}' (보기: {', '.join(URGENCY)})")
 
     summary = out.get("요약")
     if not isinstance(summary, str) or not summary.strip():
@@ -160,7 +165,7 @@ def check(text: str, spec: dict) -> tuple[bool, str | None, str]:
     # 3. 지시 일부 누락 — 요약에 꼭 들어가야 할 말이 없음
     required_word = spec.get("has")
     if required_word and required_word not in summary:
-        return False, MISSING, f"요약에 '{required_word}'가 없음: {summary!r}"
+        return False, MISSING, f"요약에 '{required_word}'가 없음: '{summary}'"
 
     # 4. 사실 오류 — 카테고리 · 긴급도가 정답과 다름
     if category != expected_category:
@@ -368,7 +373,7 @@ def print_fails(rows: list[dict], limit: int = 20):
 def save(name: str, model: str, rows: list[dict], summary: dict, note: str = "") -> Path:
     """결과 전체를 JSON 파일로 남기고, 한 줄 요약을 scoreboard.csv에 덧붙인다."""
     RESULTS.mkdir(exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")     # 예: 20261011_132653
     prompt_stem = Path(name).stem
     model_for_filename = model.replace("claude-", "")
     detail_path = RESULTS / f"run_{timestamp}_{prompt_stem}_{model_for_filename}.json"
@@ -432,12 +437,13 @@ def main(argv=None):
     tests = load_tests(args.tests)
     if args.only:
         wanted_ids = set()
-        for part in args.only.split(","):
-            low_text, separator, high_text = part.partition("-")
-            start = int(low_text)
-            if high_text:
-                end = int(high_text)
+        for part in args.only.split(","):             # 예: "1,3,16-18" → "1" · "3" · "16-18"
+            if "-" in part:
+                numbers = part.split("-")                 # "16-18" → ["16", "18"]
+                start = int(numbers[0])
+                end = int(numbers[1])
             else:
+                start = int(part)
                 end = start
             for test_id in range(start, end + 1):
                 wanted_ids.add(test_id)
@@ -463,7 +469,7 @@ def main(argv=None):
     for prompt_path in args.prompts:
         for model_name in models:
             start_time = time.perf_counter()
-            _, _, rows = run(prompt_path, model=model_name, tests=tests, detail=True)
+            passed, fails, rows = run(prompt_path, model=model_name, tests=tests, detail=True)
             summary = summarize(rows, model_name)
             saved_path = save(prompt_path, model_name, rows, summary, args.note)
             table_rows.append((Path(prompt_path).name, model_name, summary))
