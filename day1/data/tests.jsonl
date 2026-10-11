@@ -16,5 +16,5 @@
 {"id": 16, "group": "기타", "input": "회사 근처에 괜찮은 점심 식당 추천해주실 수 있나요?", "check": {"category": "기타", "urgency": "낮음"}}
 {"id": 17, "group": "기타", "input": "다음 워크숍은 언제쯤 열릴 예정인지 궁금합니다.", "check": {"category": "기타", "urgency": "낮음"}}
 {"id": 18, "group": "기타", "input": "총무팀 내선번호가 몇 번인지 알려주세요.", "check": {"category": "기타", "urgency": "낮음"}}
-{"id": 19, "group": "틀렸던", "input": "Overtime pay for last month is missing from my payslip.", "check": {"category": "인사", "urgency": "높음"}}
-{"id": 20, "group": "틀렸던", "input": "회의실 예약해 둔 게 시스템에서 사라졌어요. 오후 회의인데요.", "check": {"category": "시설", "urgency": "보통"}}
+{"id": 19, "group": "경계", "input": "Overtime pay for last month is missing from my payslip.", "check": {"category": "인사", "urgency": "높음"}}
+{"id": 20, "group": "경계", "input": "회의실 예약해 둔 게 시스템에서 사라졌어요. 오후 회의인데요.", "check": {"category": "시설", "urgency": "보통"}}

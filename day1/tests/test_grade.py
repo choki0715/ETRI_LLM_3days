@@ -63,8 +63,8 @@ def test_tests_file():
     ts = load_tests()
     assert len(ts) == 20 and [t["id"] for t in ts] == list(range(1, 21))
     groups = [t["group"] for t in ts]
-    assert groups.count("평범") == 10 and groups.count("경계") == 5
-    assert groups.count("기타") == 3 and groups.count("틀렸던") == 2
+    assert groups.count("평범") == 10 and groups.count("경계") == 7
+    assert groups.count("기타") == 3
     for t in ts:
         assert t["input"].strip()
 
