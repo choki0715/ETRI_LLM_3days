@@ -21,7 +21,6 @@ import json
 import re
 import sys
 import time
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
 
@@ -174,7 +173,7 @@ def check(text: str, spec: dict) -> tuple[bool, str | None, str]:
 
 # ---------------------------------------------------------------- 실행
 def _grade_single_test(prompt: str, test: dict, model: str) -> dict:
-    """문항 하나에 모델을 한 번 부르고 판정한다. run()이 문항마다 이 함수를 병렬로 부른다."""
+    """문항 하나에 모델을 한 번 부르고 판정한다. run()이 문항마다 이 함수를 부른다."""
     system, user = build(prompt, test["input"])
     try:
         # 사고(thinking)가 켜진 모델은 그 토큰도 output_tokens에 포함된다
@@ -212,7 +211,7 @@ def _grade_single_test(prompt: str, test: dict, model: str) -> dict:
 
 
 def run(prompt: str, *, model: str | None = None, tests: list[dict] | None = None,
-        workers: int = 4, detail: bool = False):
+        detail: bool = False):
     """프롬프트 하나를 전 문항에 돌린다.
 
     prompt — 프롬프트 본문, 또는 .txt 파일 경로
@@ -234,16 +233,11 @@ def run(prompt: str, *, model: str | None = None, tests: list[dict] | None = Non
     if model is None:
         model = llm.MODEL
 
-    # 문항마다 API를 따로 부르므로, 스레드풀로 동시에 보내 전체 시간을 줄인다.
-    # submit(함수, 인자들…)은 그 함수를 그 인자로 실행해 달라고 맡기는 것이다.
-    # futures를 문항 순서대로 담아 두면, 결과를 꺼낼 때도 같은 순서로 나온다.
-    futures = []
-    with ThreadPoolExecutor(max_workers=max(1, workers)) as executor:
-        for test in tests:
-            futures.append(executor.submit(_grade_single_test, prompt, test, model))
-        rows = []
-        for future in futures:
-            rows.append(future.result())
+    # 문항을 하나씩 차례로 채점한다 — 모델을 한 번 부르고, 판정하고, 결과를 rows에 쌓는다
+    rows = []
+    for test in tests:
+        row = _grade_single_test(prompt, test, model)
+        rows.append(row)
 
     passed = 0
     fails = []
@@ -431,7 +425,6 @@ def main(argv=None):
     parser.add_argument("--all-models", action="store_true", help="llm.MODELS 전부로 돌린다")
     parser.add_argument("--tests", default=str(TESTS))
     parser.add_argument("--only", default=None, help="일부 문항만: 예) 1,3,16-18")
-    parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--note", default="", help="결과표 '바꾼 것' 칸에 남길 한 줄")
     parser.add_argument("--quiet", action="store_true", help="실패 문항 목록을 숨긴다")
     args = parser.parse_args(argv)
@@ -470,8 +463,7 @@ def main(argv=None):
     for prompt_path in args.prompts:
         for model_name in models:
             start_time = time.perf_counter()
-            _, _, rows = run(prompt_path, model=model_name, tests=tests,
-                              workers=args.workers, detail=True)
+            _, _, rows = run(prompt_path, model=model_name, tests=tests, detail=True)
             summary = summarize(rows, model_name)
             saved_path = save(prompt_path, model_name, rows, summary, args.note)
             table_rows.append((Path(prompt_path).name, model_name, summary))

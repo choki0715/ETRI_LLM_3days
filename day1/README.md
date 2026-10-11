@@ -122,7 +122,7 @@ anthropic SDK 1.x에서는 `temperature` 인자가 빠졌습니다. API도 이 �
 |---|---|
 | `Could not resolve authentication method` | `.env`가 `day1/` 바로 아래에 있는가 · 키에 따옴표나 공백이 없는가 |
 | `not_found_error` · model | `.env`의 `MODEL` 이름 · `common/llm.py`의 `MODELS` |
-| `rate_limit_error` | `--workers 1`로 줄인다 (기본 4개 동시 호출) |
+| `rate_limit_error` | 잠시 기다렸다가 다시 돌린다 (문항을 하나씩 차례로 부르므로 보통은 걸리지 않는다) |
 | 노트북에서 `No module named src` | 첫 셀을 먼저 실행했는가 (경로를 잡는 셀) |
 | Windows에서 한글이 깨짐 | 파일은 모두 UTF-8. 메모장 대신 VS Code로 연다. `scoreboard.csv`는 엑셀에서 바로 열리도록 BOM을 붙였다 |
 | `stop_reason`이 `max_tokens` | 출력이 잘렸다. 실패 설명에 "(max_tokens에서 잘림)"이 붙는다 |
