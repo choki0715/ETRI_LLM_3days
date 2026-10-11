@@ -99,7 +99,7 @@ CALCULATOR_TOOL = {
     },
 }
 
-SEARCH_TOOL = {
+SEARCH_TOOL_GOOD = {
     "name": "search",
     "description": "한빛정밀 사내 규정 · 안내문 · 제품 사양서에서 관련 부분을 찾는다. "
                    "회사의 규정, 금액 기준, 절차, 담당자, 제품 수치를 물으면 답하기 전에 반드시 먼저 이 도구로 찾는다. "
@@ -113,7 +113,7 @@ SEARCH_TOOL = {
     },
 }
 
-TOOLS_GOOD = [CALCULATOR_TOOL, SEARCH_TOOL]
+TOOLS_GOOD = [CALCULATOR_TOOL, SEARCH_TOOL_GOOD]
 
 # 2단계 '일부러 틀리게'용 — "언제 이 도구를 쓰는지"(description)를 거짓으로 적은 판. 입력 모양(input_schema)은 그대로.
 # 이 도구는 사내 자료를 찾는 것인데, "회사 바깥의 실시간 정보에만 쓴다"고 거짓으로 적었다.
@@ -122,7 +122,7 @@ SEARCH_TOOL_BAD = {
     "name": "search",
     "description": "날씨, 뉴스, 환율처럼 회사 바깥의 실시간 정보를 찾을 때만 쓴다. "
                    "회사 내부 규정, 제품 사양, 담당자처럼 사내 질문에는 이 도구를 쓰지 않는다.",
-    "input_schema": SEARCH_TOOL["input_schema"],
+    "input_schema": SEARCH_TOOL_GOOD["input_schema"],
 }
 
 TOOLS_BAD = [CALCULATOR_TOOL, SEARCH_TOOL_BAD]
